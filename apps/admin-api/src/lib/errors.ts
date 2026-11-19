@@ -4,6 +4,7 @@ import { APP_ROLE_ERRORS, type AppRoleErrorCode } from "@ai/contracts/app-roles"
 import { API_ERRORS, type ErrorCode } from "@ai/contracts/common";
 import type { ErrorResponse } from "@ai/contracts/errors";
 import { EXTERNAL_ORG_ERRORS, type ExternalOrgErrorCode } from "@ai/contracts/external-orgs";
+import { ORG_DEPT_ERRORS, type OrgDeptErrorCode } from "@ai/contracts/org";
 import { TENANT_PROFILE_ERRORS, type TenantProfileErrorCode } from "@ai/contracts/tenants";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -85,6 +86,16 @@ const EXT_MESSAGES: Record<ExternalOrgErrorCode, string> = {
 /** CR-102a · mã lỗi user ngoài (khối riêng `EXTERNAL_ORG_ERRORS`, không thuộc `API_ERRORS` khoá 46). */
 export function extOrgError(code: ExternalOrgErrorCode, details?: unknown): AppError {
   return new AppError(code, EXTERNAL_ORG_ERRORS[code], EXT_MESSAGES[code], details);
+}
+
+const ORG_DEPT_MESSAGES: Record<OrgDeptErrorCode, string> = {
+  DEPT_NOT_EMPTY: "Department still has people or sub-departments",
+  MEMBER_IS_HEAD: "This person is a department head; change the head first",
+};
+
+/** CR-189 · mã lỗi sửa cơ cấu (khối riêng `ORG_DEPT_ERRORS`). `details` = số đếm / id liên quan. */
+export function orgDeptError(code: OrgDeptErrorCode, details?: unknown): AppError {
+  return new AppError(code, ORG_DEPT_ERRORS[code], ORG_DEPT_MESSAGES[code], details);
 }
 
 const PROFILE_MESSAGES: Record<TenantProfileErrorCode, string> = {

@@ -11,24 +11,16 @@ import {
   type OrgMembersResponse,
   type OrgResponse,
 } from "@ai/contracts/org";
-import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
+import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError, extOrgError } from "../../lib/errors";
 import { checkViolation, foreignKeyViolation } from "../../lib/pg-errors";
 import { likeArg } from "../../lib/sql";
-import type { TestHooks } from "../../lib/test-hooks";
-import { type Actor, resolveTenantScope } from "../users/users.rules";
+import { assertNameFree, lockOrgTree, type OrgCall, tenantOf } from "./org.shared";
 
-export type OrgCall = { ctx: { db: Db; hooks?: TestHooks }; actor: Actor; scope: DbScope };
-
-function tenantOf(c: OrgCall, q: string | undefined, op: "read" | "write"): string {
-  const r = resolveTenantScope(c.actor, q, op);
-  if ("code" in r) throw appError(r.code);
-  if (r.tenantId === null) throw appError("TENANT_REQUIRED");
-  return r.tenantId;
-}
+export type { OrgCall };
 
 type OrgRow = {
   members: OrgResponse["members"] | string;
@@ -169,55 +161,63 @@ async function assertParentOk(tx: Tx, t: string, groupId: string, parent: string
   if (r[0].too_deep) throw appError("VALIDATION_ERROR", { reason: "dept_too_deep" });
 }
 
-/** Đánh dấu Group là phòng ban (upsert trưởng phòng); `remove` ⇒ bỏ đánh dấu (Group giữ nguyên). */
+/** Chèn/cập nhật hàng phòng ban (trưởng phòng; phòng cha chỉ đổi khi `setParent`). FK/trigger → mã lỗi nghiệp vụ. */
+async function upsertDepartment(
+  tx: Tx,
+  t: string,
+  d: { groupId: string; input: DepartmentSetRequest; parent: string | null; setParent: boolean },
+): Promise<void> {
+  const { groupId, input, parent, setParent } = d;
+  await tx
+    .transaction((sp) =>
+      sp.execute(sql`insert into admin.departments (tenant_id, group_id, head_user_id, parent_group_id)
+        values (${t}::uuid, ${groupId}::uuid, ${input.head_user_id}::uuid, ${parent}::uuid)
+        on conflict (group_id) do update set head_user_id = excluded.head_user_id,
+          parent_group_id = case when ${setParent} then excluded.parent_group_id else admin.departments.parent_group_id end,
+          updated_at = now()`),
+    )
+    .catch((err) => {
+      if (foreignKeyViolation(err) === "departments_head_fk") throw appError("NOT_FOUND");
+      // CR-102a · com-c2 (TB-1): trigger 0029 — đối tác không làm trưởng phòng.
+      if (checkViolation(err) === "departments_head_internal_ck")
+        throw extOrgError("EXTERNAL_USER_NOT_ALLOWED");
+      throw err;
+    });
+}
+
+/**
+ * Đánh dấu Group là phòng ban (upsert trưởng phòng, phòng cha). Xoá phòng KHÔNG ở đây (CR-189: `deleteDept` — chặn khi còn
+ * người/phòng con). Đổi sang phòng cha có phòng trùng tên (không phân hoa/thường) ⇒ 409 `NAME_TAKEN`.
+ */
 export function setDepartment(
   c: OrgCall,
   q: string | undefined,
   groupId: string,
-  input: DepartmentSetRequest | "remove",
-): Promise<{ group_id: string; head_user_id: string | null } | null> {
+  input: DepartmentSetRequest,
+): Promise<{ group_id: string; head_user_id: string | null }> {
   const t = tenantOf(c, q, "write");
   return configWrite(c, "group.save", async (tx, ch) => {
+    // CR-139d · khoá theo công ty ĐẦU TIÊN (thứ tự khoá ở org.shared): hai lần đổi cha song song không cùng lúc qua kiểm tra vòng.
+    await lockOrgTree(tx, t);
     const g =
-      (await tx.execute(sql`select g.key, d.head_user_id, d.parent_group_id, d.group_id is not null as dept
+      (await tx.execute(sql`select g.key, g.name ->> 'vi' as name, d.head_user_id, d.parent_group_id, d.group_id is not null as dept
       from admin.groups g left join admin.departments d on d.group_id = g.id and d.tenant_id = g.tenant_id
       where g.id = ${groupId}::uuid and g.tenant_id = ${t}::uuid for no key update of g`)) as unknown as {
         key: string;
+        name: string;
         head_user_id: string | null;
         parent_group_id: string | null;
         dept: boolean;
       }[];
     if (!g[0]) throw appError("NOT_FOUND");
-    // CR-139d · khoá theo công ty: hai lần đổi cha song song không cùng lúc qua được kiểm tra vòng.
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`org-dept:${t}`}))`);
-    if (input === "remove") {
-      // Con của phòng bị gỡ lên làm con của cha nó (không bỏ rơi cây con).
-      await tx.execute(sql`update admin.departments set parent_group_id =
-          (select parent_group_id from admin.departments where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid), updated_at = now()
-        where tenant_id = ${t}::uuid and parent_group_id = ${groupId}::uuid`);
-      await tx.execute(
-        sql`delete from admin.departments where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid`,
-      );
-    } else {
-      const setParent = input.parent_group_id !== undefined;
-      const parent = input.parent_group_id ?? null;
-      if (parent !== null) await assertParentOk(tx, t, groupId, parent);
-      await tx
-        .transaction((sp) =>
-          sp.execute(sql`insert into admin.departments (tenant_id, group_id, head_user_id, parent_group_id)
-            values (${t}::uuid, ${groupId}::uuid, ${input.head_user_id}::uuid, ${parent}::uuid)
-            on conflict (group_id) do update set head_user_id = excluded.head_user_id,
-              parent_group_id = case when ${setParent} then excluded.parent_group_id else admin.departments.parent_group_id end,
-              updated_at = now()`),
-        )
-        .catch((err) => {
-          if (foreignKeyViolation(err) === "departments_head_fk") throw appError("NOT_FOUND");
-          // CR-102a · com-c2 (TB-1): trigger 0029 — đối tác không làm trưởng phòng.
-          if (checkViolation(err) === "departments_head_internal_ck")
-            throw extOrgError("EXTERNAL_USER_NOT_ALLOWED");
-          throw err;
-        });
-    }
+    const setParent = input.parent_group_id !== undefined;
+    const parent = input.parent_group_id ?? null;
+    if (parent !== null) await assertParentOk(tx, t, groupId, parent);
+    // Tên trùng cùng cấp chỉ kiểm khi vị trí đổi (phòng cũ trùng tên sẵn không bị chặn khi chỉ đổi trưởng phòng).
+    const newParent = setParent ? parent : g[0].parent_group_id;
+    if (!g[0].dept || newParent !== g[0].parent_group_id)
+      await assertNameFree(tx, t, { name: g[0].name, parent: newParent, except: groupId });
+    await upsertDepartment(tx, t, { groupId, input, parent, setParent });
     ch.changed({ entity: "group", tenantId: t });
     ch.audit(
       auditOf("update", "group", {
@@ -227,10 +227,7 @@ export function setDepartment(
         before: null,
         after: null,
         summary: {
-          department:
-            input === "remove"
-              ? null
-              : { head_user_id: input.head_user_id, parent_group_id: input.parent_group_id },
+          department: { head_user_id: input.head_user_id, parent_group_id: input.parent_group_id },
           before: {
             department: g[0].dept
               ? { head_user_id: g[0].head_user_id, parent_group_id: g[0].parent_group_id }
@@ -239,7 +236,7 @@ export function setDepartment(
         },
       }),
     );
-    return input === "remove" ? null : { group_id: groupId, head_user_id: input.head_user_id };
+    return { group_id: groupId, head_user_id: input.head_user_id };
   });
 }
 

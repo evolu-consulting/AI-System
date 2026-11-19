@@ -108,7 +108,7 @@ describe("M1D-FR-02 · quản lý trực tiếp", () => {
 });
 
 describe("M1D-FR-03 · phòng ban = Group + trưởng phòng", () => {
-  test("đánh dấu Group, đọc lại head + thành viên; bỏ đánh dấu; Group tenant khác ⇒ NOT_FOUND", async () => {
+  test("đánh dấu Group, đọc lại head + thành viên; Group tenant khác ⇒ NOT_FOUND", async () => {
     const [g] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
       values (${TID}, 'kd', '{"vi":"Kinh doanh"}') returning id`;
     const gid = g?.id as string;
@@ -128,8 +128,6 @@ describe("M1D-FR-03 · phòng ban = Group + trưởng phòng", () => {
     expect(await fails(setDepartment(call, undefined, gid, { head_user_id: X }), "NOT_FOUND")).toBe(
       true,
     );
-    await setDepartment(call, undefined, gid, "remove");
-    expect((await getOrg(call, undefined)).departments).toEqual([]);
     const [og] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
       values (${OTHER}, 'kd', '{"vi":"KD"}') returning id`;
     expect(
@@ -149,7 +147,7 @@ describe("CR-139d · cây phòng ban (đổi phòng cha)", () => {
   };
   const parentOf = async (gid: string) =>
     (await getOrg(call, undefined)).departments.find((d) => d.group_id === gid)?.parent_group_id;
-  test("đặt cha, giữ nguyên khi bỏ qua, lên gốc bằng null; gỡ phòng giữa ⇒ con lên cha của nó", async () => {
+  test("đặt cha, giữ nguyên khi bỏ qua, lên gốc bằng null", async () => {
     const a = await dept(TID, "cty");
     const b = await dept(TID, "kd");
     const c = await dept(TID, "kd-hn");
@@ -159,8 +157,6 @@ describe("CR-139d · cây phòng ban (đổi phòng cha)", () => {
     expect([await parentOf(b), await parentOf(c)]).toEqual([a, b]);
     await setDepartment(call, undefined, c, { head_user_id: U2 }); // bỏ qua parent ⇒ giữ
     expect(await parentOf(c)).toBe(b);
-    await setDepartment(call, undefined, b, "remove");
-    expect(await parentOf(c)).toBe(a);
     await setDepartment(call, undefined, c, { head_user_id: U2, parent_group_id: null });
     expect(await parentOf(c)).toBeNull();
   });
