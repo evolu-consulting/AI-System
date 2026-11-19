@@ -131,6 +131,8 @@ const found = (r: PostRow | null): PostRow => {
   return r;
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** CR-191 · bảng tin gộp có kèm bài công ty đã kết nối? Chỉ người nội bộ, bài đang hiệu lực, không lọc theo thứ chỉ bài mình có
  * (của tôi, người đăng, nhóm hàng, khu vực, từ khoá — hàm kết nối không lọc các thứ đó), không lọc «chỉ công ty mình». */
 export function withConnected(a: Access, f: FeedFilter): boolean {
@@ -142,7 +144,8 @@ export function withConnected(a: Access, f: FeedFilter): boolean {
     f.cat === null &&
     f.area === null &&
     f.q === null &&
-    f.author !== "host"
+    f.author !== "host" &&
+    (f.author === null || UUID_RE.test(f.author)) // `authorOrgId` không phải uuid ⇒ không có bài kết nối (không 500)
   );
 }
 

@@ -111,7 +111,7 @@ afterAll(async () => {
 });
 
 describe("CR-191 · perf bảng tin gộp (N7)", () => {
-  it("trang 20 bài (2.000 bài mình + 10.000 bài của 200 công ty kết nối): 2 câu SQL cố định, p95 ≤ 200 ms", async () => {
+  it("trang 20 bài (2.000 bài mình + 10.000 bài của 200 công ty kết nối): 2 câu SQL cố định, p95 ≤ 120 ms", async () => {
     const uow = createPackUow(db, "community", (tx) => ({ tx: counting(tx) }));
     const page = async (cursor: FeedFilter["cursor"]) => {
       const out = await feed(uow as never, access, { ...base, cursor });
@@ -130,7 +130,7 @@ describe("CR-191 · perf bảng tin gộp (N7)", () => {
       feed(uow as never, access, { ...base, author: "host" }),
     );
     expect([r0.sql, r1.sql, r2.sql]).toEqual([1, 2, 2]);
-    expect(r1.p95).toBeLessThanOrEqual(200);
-    expect(r2.p95).toBeLessThanOrEqual(200);
+    expect(r1.p95).toBeLessThanOrEqual(120);
+    expect(r2.p95).toBeLessThanOrEqual(120);
   });
 });

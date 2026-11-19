@@ -33,7 +33,11 @@ Bảng tin GỘP (BR-191-1/2/3): `GET /pack/community/feed` trả một dòng = 
 - `feed_connected` thêm điều kiện `moderation IN ('none','approved')` (cc_posts cũ thiếu).
 - Chức vụ người đăng bài công ty mình qua DEFINER `community.author_titles` (CTE trong cùng câu bảng tin, không thêm câu); người dùng ngoài nhận rỗng.
 - `cc_connected_ids` chặn người dùng ngoài (42501).
-- journal `when`: hub 0163 = 1806903700000 (giữa 0161 và 0166), community 0026 = 1807000660000 (> 0025).
+- journal `when` (soát #1): hub 0163 đặt SAU 0166 = 1806904100000, idx 146 (entry 0166 giữ nguyên); community 0026 = 1807000660000 (> 0025).
+- Soát #2: nhãn NCC/KH qua MST chỉ khi công ty người xem có `directory_verified_at` và MST không trùng công ty khác; không đạt ⇒ không nhãn.
+- Soát #3 perf (evotest, 2.000 bài mình + 10.000 bài của 200 công ty kết nối, 2 câu/trang): trước — một câu phẳng: p95 trang đầu 99,1 / trang sau 106,1 ms (lượt khác 124,6 / 134,2, không `-Exclusive`); LATERAL thẳng (tra tên/chức vụ/số tệp trên mọi hàng ứng viên): 144,3 ms (`-Exclusive`); sau — LATERAL mỗi công ty trên `posts_feed_idx` + tra thêm chỉ trên 20 hàng cuối: 84,3 / 77,6 ms (`-Exclusive`). Chỉ bài công ty mình: 15,7 ms. Ngưỡng 120 ms.
+- Soát #4: `authorOrgId` không phải uuid ⇒ không gọi phần kết nối.
+- `job_title` ≤ 80 do CHECK `people_profiles_title_ck` = contract `.max(80)` ⇒ không cắt.
 - Viết lại `connected-posts.int.test.ts` (test của CR-161 cho `cc_posts`): spec CR-191 đổi nghĩa (bỏ bảng tin riêng từng công ty, G1).
 
 ## Delta (so với docs/current)
@@ -49,10 +53,14 @@ Bảng tin là MỘT dòng: bài công ty mình (luật người xem cũ) và b�
 - Kịch bản: khi ngắt kết nối thì bài đối tác biến mất ở lần tải kế [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » ngắt kết nối ⇒ biến mất ở lần gọi kế, nối lại ⇒ hiện lại (không cache)]
 - Kịch bản: khi người dùng ngoài (đối tác cộng đồng) gọi thì bị từ chối [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » người dùng ngoài ⇒ 42501, chưa đặt người xem ⇒ 42501, A tắt Bảng tin ⇒ rỗng]
 - Kịch bản: khi xem bảng tin thì một dòng gộp mới nhất trước kèm nhãn nguồn, công ty, chức vụ [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » API bảng tin (service): một dòng gộp bài công ty mình + đối tác, mới nhất trước, nhãn nguồn + công ty + chức vụ]
+- Kịch bản: khi công ty người xem chưa được xác minh hoặc MST trùng công ty khác thì không có nhãn Nhà cung cấp/Khách hàng [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » nhãn NCC/KH qua MST chỉ khi công ty người xem đã được xác minh và MST không trùng công ty khác]
+- Kịch bản: khi tải tiếp theo con trỏ thì không trùng không sót bài [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » trang theo con trỏ (2 bài/trang) đi hết dòng gộp: không trùng, không sót]
+- Kịch bản: khi lưu bài chọn công ty chưa kết nối thì từ chối, không ghi [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » lưu «Ai thấy bài» chọn công ty chưa kết nối / mới mời một chiều ⇒ 400, không ghi]
 - Kịch bản: khi trộn hai nguồn thì đúng thứ tự tới micro giây và báo còn trang sau [test: apps/hub-api/src/modules/packs/community/domain/feed-merge.rules.test.ts » trộn hai nguồn mới nhất trước, lấy đúng limit, báo còn trang sau]
-- Kịch bản: khi tải trang 20 bài thì số câu SQL cố định [test: apps/hub-api/src/modules/packs/community/adapters/feed-merge.perf.int.test.ts » trang 20 bài (2.000 bài mình + 10.000 bài của 200 công ty kết nối): 2 câu SQL cố định, p95 ≤ 200 ms]
+- Kịch bản: khi tải trang 20 bài thì số câu SQL cố định [test: apps/hub-api/src/modules/packs/community/adapters/feed-merge.perf.int.test.ts » trang 20 bài (2.000 bài mình + 10.000 bài của 200 công ty kết nối): 2 câu SQL cố định, p95 ≤ 120 ms]
 - Kịch bản: khi gọi đường cũ «Bảng tin công ty» thì không còn [test: apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » đường cũ /connect/posts/:tenant_id không còn — bài công ty đã kết nối nằm ở bảng tin gộp /pack/community/feed]
 
 ## Việc còn lại
+- Đổi MST công ty (`tenant-onboard/adapters/onboard.repo.ts:86`) KHÔNG gỡ xác minh danh bạ ⇒ công ty đã xác minh có thể đổi sang MST khác mà vẫn giữ nhãn NCC/KH (ghi `docs/TECH-DEBT.md`).
 - Đếm theo nguồn/loại cho bộ lọc (lát `cr191-feed-ui` cần — thêm cột đếm vào `feed_connected` hoặc hàm đếm một câu).
 - Ảnh/tệp bài đối tác (chỉ `fileCount`), bình luận chéo, ảnh người chéo: lát sau.
