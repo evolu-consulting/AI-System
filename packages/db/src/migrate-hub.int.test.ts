@@ -108,6 +108,7 @@ const HUB_TABLES = [
   "process_defs",
   "process_notices",
   "process_outputs",
+  "process_role_assignments", // CR-182 hub 0159 · gán vai trò quy trình
   "process_routing_rules",
   "process_routings",
   "process_run_events", // CR-120 hub 0093 · sự kiện gói bắn cho node wait_event
