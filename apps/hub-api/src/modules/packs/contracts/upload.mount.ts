@@ -148,7 +148,7 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
         ...(d.redis ? { redis: d.redis } : {}),
         limit: VERIFY_FILES_PER_MINUTE,
       }),
-      find: (who, sha) => verifyUow.tenant(who, (x) => x.verify.find(sha)),
+      find: (who, sha, from) => verifyUow.tenant(who, (x) => x.verify.find(sha, from)),
     }),
   );
 }

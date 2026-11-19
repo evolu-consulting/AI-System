@@ -16,9 +16,11 @@ import { EyeIcon } from "./ChildRows";
 export function MobileRowMenu({
   r,
   onDelete,
+  onVerify,
 }: {
   r: ContractListRow;
   onDelete?: ((id: string) => void) | undefined;
+  onVerify?: ((r: { id: string; title: string }) => void) | undefined;
 }) {
   const { t } = useTranslation();
   const nav = useNavigate();
@@ -46,6 +48,12 @@ export function MobileRowMenu({
           <EyeIcon />
           {t("contracts.list.viewContract")}
         </DropdownMenuItem>
+        {onVerify && (
+          <DropdownMenuItem data-testid="row-verify" onSelect={() => onVerify(r)}>
+            <ICONS.search className="size-4" />
+            {t("contracts.verify.rowItem")}
+          </DropdownMenuItem>
+        )}
         {del !== "hidden" && (
           <DropdownMenuItem
             danger

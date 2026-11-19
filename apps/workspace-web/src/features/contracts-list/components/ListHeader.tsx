@@ -16,9 +16,11 @@ type Props = {
   onPick: (files: File[]) => void;
   exporter: { go: (f: ExportFormat) => Promise<void>; busy: ExportFormat | null };
   run: (f: ExportFormat) => Promise<ExportFile>;
+  /** CR-188 · mở hộp «Kiểm tra tệp» (dò mọi giấy tờ đã ký của công ty). */
+  onVerify: () => void;
 };
 
-export function ListHeader({ write, fileRef, onPick, exporter, run }: Props) {
+export function ListHeader({ write, fileRef, onPick, exporter, run, onVerify }: Props) {
   const { t } = useTranslation();
   const nav = useNavigate();
   const title = t("contracts.contractsPage.title");
@@ -50,6 +52,7 @@ export function ListHeader({ write, fileRef, onPick, exporter, run }: Props) {
           title={title}
           {...(write ? { primary: upload() } : {})}
           actions={[
+            { label: t("contracts.verify.button"), onSelect: onVerify },
             ...EXPORT_FORMATS.map((f) => ({
               label: t(`contracts.list.export.${f}`),
               disabled: exporter.busy !== null,
@@ -71,6 +74,9 @@ export function ListHeader({ write, fileRef, onPick, exporter, run }: Props) {
           title={title}
           actions={
             <>
+              <Button variant="quiet" size="sm" data-testid="verify-open" onClick={onVerify}>
+                {t("contracts.verify.button")}
+              </Button>
               <ExportButtons run={run} />
               {write && (
                 <>

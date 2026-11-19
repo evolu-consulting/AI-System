@@ -191,15 +191,18 @@ test("kiểm tra tệp: bản đã ký ⇒ khớp; tệp gốc ⇒ khớp tệp 
     buffer: signedPdf as Buffer,
   });
   await expect(page.getByTestId("verify-hit")).toContainText("Khớp", { timeout: 30_000 });
-  await expect(page.getByRole("link", { name: "Xem bản đã ký" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mở hợp đồng" })).toBeVisible();
   await input.setInputFiles({
     name: "la.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4 tệp lạ không phải HĐ nào của công ty"),
   });
-  await expect(page.getByTestId("verify-miss")).toContainText("Không khớp bản nào đã lưu", {
-    timeout: 30_000,
-  });
+  await expect(page.getByTestId("verify-miss")).toContainText(
+    "Không khớp giấy tờ đã ký nào của công ty",
+    {
+      timeout: 30_000,
+    },
+  );
   await page.context().close();
 });
 

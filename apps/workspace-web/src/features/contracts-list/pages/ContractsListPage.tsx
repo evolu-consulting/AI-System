@@ -14,6 +14,7 @@ import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ColumnFilters, ColumnPicker, Pager, TableTools, useColumns } from "~/features/table";
+import { useVerifyDialog } from "~/features/verify-file/use-verify-dialog";
 import { CATEGORIES_KEY, createCategory, exportContracts } from "../api";
 import { ChildCard, ChildRowCells } from "../components/ChildRows";
 import {
@@ -73,6 +74,7 @@ export function ContractsListPage() {
   const qc = useQueryClient();
   const file = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
+  const verify = useVerifyDialog(); // CR-188 · hộp «Kiểm tra tệp»
   // Gap #10: lọc ngày nằm trên URL (`?due=` `?dfield=` `?df=` `?dt=`).
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const date = dateFilterOf(parseDateSearch(search));
@@ -130,8 +132,9 @@ export function ContractsListPage() {
       docs: new Map((list.data?.docs ?? []).map((d) => [d.id, d.doc_type])),
       sources: new Map((list.data?.docs ?? []).map((d) => [d.id, d.source])),
       onDelete: delDialog.open,
+      onVerify: verify.open,
     }),
-    [list.data, flow, delDialog.open],
+    [list.data, flow, delDialog.open, verify.open],
   );
   const rows = useMemo(() => buildRows(list.data), [list.data]);
 
@@ -172,7 +175,9 @@ export function ContractsListPage() {
         onPick={pick}
         exporter={exporter}
         run={(f) => exportContracts(exportQs(f))}
+        onVerify={() => verify.open()}
       />
+      {verify.node}
       {delDialog.node}
       <NeedPdfNotice names={notPdf} />
       <UploadTypeGate

@@ -31,7 +31,6 @@ describe("buildShellNav", () => {
       "/contracts/partners",
       "/contracts/products",
       "/contracts/org",
-      "/contracts/verify", // CR-182 · «Kiểm tra tệp»
     ]);
     expect(groups[1]?.items.map((n) => n.to)).toEqual(["/community", "/community/me"]);
   });

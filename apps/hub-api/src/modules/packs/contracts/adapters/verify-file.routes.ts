@@ -1,6 +1,5 @@
-// CR-182 · R7 · `POST /pack/contracts/verify-file` (multipart `file`): máy chủ tính sha256 (KHÔNG lưu tệp), so với bản đã ký + tệp gốc cần ký của
-// CÔNG TY người gọi, chỉ HĐ người gọi thấy. Không khớp / HĐ không thấy / tenant khác ⇒ cùng một kết quả `{match:false}` (không lộ HĐ).
-// Guard `read` TRƯỚC khi đọc thân; cỡ tệp như tải tệp kèm (413 `FILE_TOO_LARGE`); giới hạn tần suất theo người dùng (429).
+// CR-182 · R7 / CR-188 · `POST /pack/contracts/verify-file` (multipart `file`, tuỳ chọn `from_contract_id`): máy chủ tính sha256 (KHÔNG lưu tệp),
+// so với MỌI bản đã ký của CÔNG TY người gọi. Khớp HĐ không có quyền xem ⇒ `{match:true, visible:false}` không chi tiết (cùng hình dạng); tenant khác ⇒ không khớp.
 import { createHash } from "node:crypto";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -9,6 +8,7 @@ import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/pu
 import { pickMatch, type VerifyCandidate } from "../domain/verify-file.rules";
 import type { VerifyFileLimit } from "./verify-file.limit.redis";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLACK = 64 * 1024;
 const tooLarge = () => new AppError("FILE_TOO_LARGE", 413, "File too large");
 
@@ -18,6 +18,7 @@ export type VerifyFileDeps = {
   find: (
     who: { tenantId: string; userId: string },
     sha256: string,
+    fromContractId: string | null,
   ) => Promise<readonly VerifyCandidate[]>;
 };
 
@@ -42,7 +43,9 @@ export function verifyFileRoutes(view: PackAccessView, d: VerifyFileDeps): Hono<
       if (file.size > d.maxBytes) throw tooLarge();
       const bytes = new Uint8Array(await file.arrayBuffer());
       const sha = createHash("sha256").update(bytes).digest("hex");
-      return c.json(pickMatch(await d.find(who, sha)));
+      const from = form?.get("from_contract_id");
+      const fromId = typeof from === "string" && UUID_RE.test(from) ? from : null;
+      return c.json(pickMatch(await d.find(who, sha, fromId), fromId));
     },
   );
   return r;

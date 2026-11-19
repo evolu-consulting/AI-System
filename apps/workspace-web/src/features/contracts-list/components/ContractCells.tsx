@@ -9,6 +9,12 @@ import type {
   DocType,
 } from "@ai/contracts/pack-contracts";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ai/web-kit/ui/kit/dropdown-menu";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { TruncText as KitTruncText } from "@ai/web-kit/ui/kit/trunc-text";
@@ -52,6 +58,8 @@ export type RowCtx = {
   flow?: ReadonlyMap<string, FlowSummaryItem> | undefined;
   /** Mở hộp xoá của HĐ `id`. */
   onDelete?: (id: string) => void;
+  /** CR-188 · mở hộp «Kiểm tra tệp» từ HĐ này (truyền `from_contract_id`). */
+  onVerify?: (r: { id: string; title: string }) => void;
 };
 
 export { COLUMN_KEYS, COLUMN_KEYS_DEAL, type ColumnKey };
@@ -277,6 +285,28 @@ function RowActions({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         </TooltipTrigger>
         <TooltipContent>{t("contracts.list.viewContract")}</TooltipContent>
       </Tooltip>
+      {ctx.onVerify && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="quiet"
+              size="icon"
+              className="size-8 border-0 bg-transparent"
+              aria-label={t("contracts.list.rowMore")}
+              data-testid="row-more"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ICONS.moreActions className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem data-testid="row-verify" onSelect={() => ctx.onVerify?.(r)}>
+              <ICONS.search className="size-4" />
+              {t("contracts.verify.rowItem")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       {del !== "hidden" && (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -353,7 +383,7 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
           </span>
         )}
       </Link>
-      <MobileRowMenu r={r} onDelete={ctx.onDelete} />
+      <MobileRowMenu r={r} onDelete={ctx.onDelete} onVerify={ctx.onVerify} />
     </li>
   );
 }

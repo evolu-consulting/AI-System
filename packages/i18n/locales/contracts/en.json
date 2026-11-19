@@ -58,18 +58,28 @@
     },
     "verify": {
       "title": "Check a file",
-      "intro": "Pick a file to see whether it is a version Evolu stored. The file is not kept.",
+      "intro": "Upload a file: the system searches every signed document of your company and tells you which contract it belongs to, or that it was edited. The file is not kept.",
+      "from": "Opened from contract {{title}}.",
       "drop": "Drop a file here",
       "pick": "Choose a file",
-      "hit": "Match: {{which}} of contract {{title}} · check code {{code}}",
-      "afterSign": "after {{name}} signed",
-      "original": "Original",
-      "someone": "the signer",
-      "at": "signed {{at}}",
-      "open": "View signed version",
+      "hit": "Match: signed version of {{kind}} {{title}}",
+      "kind": {
+        "contract": "contract",
+        "appendix": "appendix",
+        "other": "document"
+      },
+      "partner": "Partner: {{name}}",
+      "signedAt": "{{name}} signed {{at}}",
+      "code": "Check code: {{code}}",
+      "someone": "The signer",
+      "other": "This file is the signed version of another contract: {{title}}",
+      "hidden": "Matches a signed document of your company.",
       "openContract": "Open contract",
-      "miss": "No stored version matches — the file may have been edited or was not made by Evolu.",
-      "error": "Could not check the file. Try again in a few minutes."
+      "miss": "The file matches no signed document of your company — it may have been edited or is not from your company.",
+      "error": "Could not check the file. Try again in a few minutes.",
+      "close": "Close",
+      "button": "Check a file",
+      "rowItem": "Check a file against this contract"
     },
     "appendix": {
       "title": "Appendices and prices",

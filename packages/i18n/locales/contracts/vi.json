@@ -58,18 +58,28 @@
     },
     "verify": {
       "title": "Kiểm tra tệp",
-      "intro": "Chọn một tệp để biết nó có đúng là bản Evolu đã lưu hay không. Tệp không được lưu lại.",
+      "intro": "Tải một tệp lên: hệ thống dò trong mọi giấy tờ đã ký của công ty và báo tệp thuộc hợp đồng nào, hoặc đã bị sửa. Tệp không được lưu lại.",
+      "from": "Đang mở từ hợp đồng {{title}}.",
       "drop": "Kéo thả tệp vào đây",
       "pick": "Chọn tệp",
-      "hit": "Khớp: {{which}} của hợp đồng {{title}} · mã kiểm tra {{code}}",
-      "afterSign": "Sau khi {{name}} ký",
-      "original": "Bản gốc",
-      "someone": "người ký",
-      "at": "ký lúc {{at}}",
-      "open": "Xem bản đã ký",
+      "hit": "Khớp: bản đã ký của {{kind}} {{title}}",
+      "kind": {
+        "contract": "hợp đồng",
+        "appendix": "phụ lục",
+        "other": "giấy tờ"
+      },
+      "partner": "Đối tác: {{name}}",
+      "signedAt": "{{name}} ký lúc {{at}}",
+      "code": "Mã kiểm tra: {{code}}",
+      "someone": "Người ký",
+      "other": "Tệp này là bản đã ký của HĐ khác: {{title}}",
+      "hidden": "Khớp một giấy tờ đã ký của công ty.",
       "openContract": "Mở hợp đồng",
-      "miss": "Không khớp bản nào đã lưu — tệp có thể đã bị sửa hoặc không phải bản do Evolu lập.",
-      "error": "Chưa kiểm được tệp. Thử lại sau ít phút."
+      "miss": "Tệp không khớp giấy tờ đã ký nào của công ty — có thể đã bị sửa hoặc không phải của công ty bạn.",
+      "error": "Chưa kiểm được tệp. Thử lại sau ít phút.",
+      "close": "Đóng",
+      "button": "Kiểm tra tệp",
+      "rowItem": "Kiểm tra tệp với hợp đồng này"
     },
     "appendix": {
       "title": "Phụ lục và giá",
