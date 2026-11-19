@@ -65,6 +65,14 @@ describe("CR-188 BR-188-6 · pickMatch", () => {
     expect(pickMatch([o, base], "c1")).toMatchObject({ other: false, contract: { id: "c1" } });
     expect(pickMatch([hiddenRow], "c1")).toMatchObject({ visible: false, other: true });
   });
+  it("bản mới nhất không xem được không che bản cũ xem được", () => {
+    const newerHidden = { ...hiddenRow, signedAt: "2026-11-09T00:00:00Z" };
+    expect(pickMatch([newerHidden, base])).toMatchObject({
+      match: true,
+      visible: true,
+      contract: { id: "c1" },
+    });
+  });
   it("nhiều bản ⇒ bản ký mới nhất", () => {
     const later = { ...base, seq: 2, signedAt: "2026-11-05T00:00:00Z", signedBy: "Bình" };
     expect(pickMatch([base, later])).toMatchObject({ seq: 2, signed_by: "Bình" });

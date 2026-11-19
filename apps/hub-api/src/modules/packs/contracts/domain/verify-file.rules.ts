@@ -66,7 +66,12 @@ export function pickMatch(
   const mine = fromContractId
     ? rows.find((r) => r.visible && r.contractId === fromContractId)
     : undefined;
-  const m = mine ?? [...rows].sort((a, b) => (b.signedAt ?? "").localeCompare(a.signedAt ?? ""))[0];
+  const m =
+    mine ??
+    [...rows].sort(
+      (a, b) =>
+        Number(b.visible) - Number(a.visible) || (b.signedAt ?? "").localeCompare(a.signedAt ?? ""),
+    )[0];
   if (!m) return { ...EMPTY };
   const other = fromContractId !== null && m.contractId !== fromContractId;
   if (!m.visible || m.contractId === null) return { ...EMPTY, match: true, other };
