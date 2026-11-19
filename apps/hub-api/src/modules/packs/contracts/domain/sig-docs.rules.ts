@@ -1,7 +1,9 @@
 // CR-188 · BR-188-5: luật thuần của «Giấy tờ đã ký bằng chữ ký này» — con trỏ trang (created_at, id).
 import { SIG_DOCS_PAGE } from "@ai/contracts/pack-contracts";
 
-import { z } from "zod";
+// UUID chuẩn RFC (cùng luật `z.uuid()` của zod 4) — domain chỉ dùng thư viện lõi (ca-domain-builtin-only).
+const UUID_RE =
+  /^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
 export type SigDocCursor = { at: string; id: string };
 
@@ -12,7 +14,7 @@ export function decodeCursor(raw: string | undefined): SigDocCursor | null {
   if (!raw) return null;
   const [at, id, extra] = raw.split("|");
   if (!at || !id || extra !== undefined) return null;
-  if (!z.uuid().safeParse(id).success || Number.isNaN(Date.parse(at))) return null;
+  if (!UUID_RE.test(id) || Number.isNaN(Date.parse(at))) return null;
   return { at: new Date(at).toISOString(), id };
 }
 

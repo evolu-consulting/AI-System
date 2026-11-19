@@ -2,7 +2,6 @@
 // thấy ý kiến/tệp). Lớp 2: chỉ cổng. Hai lần đọc: (1) tx gói: trạng thái lượt + `stage_decided` + bằng chứng (MỘT câu, DEFINER theo
 // tenant); (2) `stepsView` của engine (tên người, ai quyết được bước đang mở). HĐ không thấy / tenant khác ⇒ null (404).
 import type { ApprovalRecord } from "@ai/contracts/pack-contracts";
-import { logger } from "../../../../lib/logger";
 import type { PackWho } from "../../kit/public";
 import { type PdfImage, renderApprovalRecordPdf } from "../adapters/approval-record.pdf";
 import { buildApprovalRecord, canReadEvidence } from "../domain/approval-record.rules";
@@ -26,6 +25,7 @@ export type ApprovalRecordDeps = Pick<
   | "savedBytes"
   | "userNames"
   | "savePdf"
+  | "warn"
 > & {
   uow: { tenant<T>(who: PackWho, fn: (r: RecordRepos) => Promise<T>): Promise<T> };
 };
@@ -108,7 +108,7 @@ async function ensureSaved(
   return d
     .savePdf(who, id, () => approvalRecordArchive(d)(who, id))
     .catch((e: unknown) => {
-      logger.warn("approval-record-save-failed", {
+      d.warn?.("approval-record-save-failed", {
         contract_id: id,
         error: e instanceof Error ? e.name : "unknown",
       });

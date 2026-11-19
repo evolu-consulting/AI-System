@@ -713,5 +713,49 @@
       "severity": "warn",
       "name": "component-no-fetch-legacy"
     }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/messages/adapters/partner.repo.ts",
+    "to": "packages/db/src/hub-scope.ts",
+    "unresolvedTo": "@ai/db/hub-scope",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-platform-db-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/adapters/receive-flow.repo.ts",
+    "to": "packages/db/src/hub-scope.ts",
+    "unresolvedTo": "@ai/db/hub-scope",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-platform-db-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/messages/domain/partner.rules.ts",
+    "to": "node_modules/.bun/zod@4.6.5/node_modules/zod/index.d.cts",
+    "unresolvedTo": "zod",
+    "dependencyTypes": ["npm", "npm-no-pkg", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-domain-builtin-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/connect/domain/connect.codec.ts",
+    "to": "node_modules/.bun/zod@4.6.5/node_modules/zod/index.d.cts",
+    "unresolvedTo": "zod",
+    "dependencyTypes": ["npm", "npm-no-pkg", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-domain-builtin-only"
+    }
   }
 ]

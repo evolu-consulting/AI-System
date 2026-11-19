@@ -136,6 +136,7 @@ export async function mountRecordAutoSave(
 /** CR-181 · s10 · cổng hub/FileBox cho hồ sơ duyệt: ảnh chữ ký đã in, đọc bản lưu, tên người ký (người không có bước duyệt). */
 export function recordDeps(d: ContractsAiDeps, db: Db, view: PackAccessView) {
   return {
+    warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
     evidenceBytes: d.evidenceBytes,
     evidenceNames: d.evidenceNames,
     ...(d.recordFiles ? { savePdf: saveApprovalRecord(db, d.recordFiles) } : {}),
