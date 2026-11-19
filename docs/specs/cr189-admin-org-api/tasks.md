@@ -3,7 +3,7 @@ id: cr189-admin-org-api
 lát: cr189-admin-org-api
 cr: CR-189
 làn: đầy đủ
-migration: hub 0171 (số tự chọn, điều phối kiểm journal khi gộp)
+migration: hub 0172 (số do điều phối giao)
 phụ thuộc: cr189-org-members-tab
 ---
 ## Plan (ngắn)
@@ -15,7 +15,7 @@ API quản trị cho sửa cơ cấu trực tiếp trên sơ đồ (BR-189-6, ch
 - [x] `org-dept.service.ts` (mới): `createDept`, `renameDept`, `deleteDept`. `org-dept.members.ts` (mới): `addDeptMembers`, `removeDeptMember` (+ `access {gained, lost}`).
 - [x] `org.service.ts` `setDepartment`: khoá công ty ĐẦU TIÊN (trước khoá hàng group — cùng thứ tự với các thao tác mới), bỏ nhánh `remove`, đổi phòng cha kiểm tên trùng cùng cấp.
 - [x] `org.routes.ts`: `POST /admin/org/departments`, `PUT …/:id/name`, `POST …/:id/members`, `DELETE …/:id/members/:userId`; `DELETE …/:id` đổi nghĩa (chặn khi còn người/phòng con).
-- [x] (soát Opus) hub `0171` hàm DEFINER `hub.org_group_refs` + `org.hub.ts`: xoá phòng giữ Group nếu còn agent/quy trình/việc duyệt, chặn khi việc duyệt đang mở (`DEPT_IN_USE`); `access` tính cả agent + quy trình; `exists` có `tenant_id`; `groupKeyOf` trần 1000 lần; ca N2.
+- [x] (soát Opus) hub `0172` hàm DEFINER `hub.org_group_refs` + `org.hub.ts`: xoá phòng giữ Group nếu còn agent/quy trình/việc duyệt, chặn khi việc duyệt đang mở (`DEPT_IN_USE`); `access` tính cả agent + quy trình; `exists` có `tenant_id`; `groupKeyOf` trần 1000 lần; ca N2.
 - [x] test int service + HTTP; sửa 2 test cũ có gọi `setDepartment(..., "remove")`.
 
 ## Không làm / Chạm
@@ -32,7 +32,7 @@ Chạm: `apps/admin-api/src/modules/org/*`, `apps/admin-api/src/lib/errors.ts`, 
 - Thứ tự khoá (một chỗ: `org.shared.ts`): advisory `org-dept:<tenant>` → groups theo id tăng (phòng đích + cha) → `group_members` theo (group, user) tăng → `config_meta`. `setDepartment` cũ khoá group TRƯỚC advisory ⇒ đảo lại để không deadlock với thao tác mới.
 - «Phòng gốc không xoá» = nút «Công ty» ảo của sơ đồ (không có bản ghi) ⇒ không có API xoá nó; phòng cấp trên cùng (cha null) vẫn xoá được nếu rỗng.
 - Xoá phòng rỗng: xoá cả Group, TRỪ khi Group còn được dùng: `feature_grants`/vai (cùng công ty), `hub.agent_grants`, `run_group_ids`, từng được giao việc duyệt (đã đóng) ⇒ chỉ bỏ hàng phòng ban, trả `{group_deleted:false}`. Việc duyệt ĐANG MỞ giao cho nhóm ⇒ 409 `DEPT_IN_USE {open_reviews}`. Đếm «còn người» = thành viên ∪ trưởng phòng.
-- Hub: `admin_rw` không đọc `process_defs`/`review_tasks` ⇒ migration hub `0171_cr189_org_group_refs` (DEFINER, chỉ quản trị đúng công ty, nhóm ≤ 1000; vắng hàm ⇒ coi như không có tham chiếu). Số 0171 tự chọn (0170 mới nhất, 0169 vắng): điều phối kiểm journal.
+- Hub: `admin_rw` không đọc `process_defs`/`review_tasks` ⇒ migration hub `0172_cr189_org_group_refs` (DEFINER, chỉ quản trị đúng công ty, nhóm ≤ 1000; vắng hàm ⇒ coi như không có tham chiếu). Số 0172 do điều phối giao (sổ `docs/specs/CR-187/migrations.md`).
 - Không thêm mã vào `API_ERRORS` (khoá 46): dùng `NAME_TAKEN` (tên trùng) có sẵn + khối mã riêng `ORG_DEPT_ERRORS` như `EXTERNAL_ORG_ERRORS`.
 - Tên phòng: trim, gộp khoảng trắng, ≤ 64; trùng không phân hoa/thường trong cùng phòng cha ⇒ 409 `NAME_TAKEN` (kiểm trong khoá công ty ⇒ không đua). Phòng cũ đã trùng tên sẵn không bị chặn trừ khi đổi tên/đổi cha.
 - Key Group tự sinh từ tên (bỏ dấu, thường, `-`, ≤ 24 ký tự + hậu tố `-2`…); không phụ thuộc người dùng nhập.

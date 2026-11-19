@@ -1,5 +1,5 @@
 // CR-189 · Group của phòng ban còn được Hub dùng ở đâu (agent, quy trình, việc duyệt) — qua hàm DEFINER `hub.org_group_refs`
-// (hub 0171; `admin_rw` không đọc các bảng đó). Mẫu `groups.hub.ts`: hỏi quyền hàm trong CÙNG transaction, không cache; hàm vắng /
+// (hub 0172; `admin_rw` không đọc các bảng đó). Mẫu `groups.hub.ts`: hỏi quyền hàm trong CÙNG transaction, không cache; hàm vắng /
 // chưa cấp (DB không có Hub) ⇒ coi như không có tham chiếu (không có bảng Hub thì không có gì để mất).
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
