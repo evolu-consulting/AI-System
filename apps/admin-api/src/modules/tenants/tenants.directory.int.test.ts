@@ -1,5 +1,5 @@
 // CR-124 · q2 · FLOW4-FR-03/04/05 · NFR-04 · danh bạ công ty qua HTTP thật (RLS thật, role admin_api):
-// chỉ công ty đã bật + không phải chính mình + đúng 5 cột công khai (test hợp đồng); chỉ quản trị CHÍNH công ty bật/tắt;
+// chỉ công ty đã bật + không phải chính mình + đúng 5 cột công khai (test hợp đồng); bật/tắt chỉ qua Sổ Hợp Tác (CR-191, đường cũ bị từ chối);
 // chỉ quản trị nền tảng đặt "Đã xác minh" (cả API lẫn hàm DB).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { DirectorySearchResponseSchema, TenantCompanyProfileSchema } from "@ai/contracts/tenants";
@@ -18,6 +18,8 @@ const PUBLIC_COLUMNS = ["address", "legal_name", "tax_code", "tenant_id", "verif
 
 let env: Env;
 const put = (path: string, o: Opts) => env.call("PUT", path, o);
+const setListed = (id: string, on: boolean) =>
+  env.owner`update admin.tenants set directory_listed = ${on} where id = ${id}`;
 const search = (q: string, token: string) =>
   env.get(`/admin/directory?q=${encodeURIComponent(q)}`, { token });
 
@@ -47,12 +49,7 @@ describe("CR-124 q2 · danh bạ công ty", () => {
       expect((await search("0109876543", acme)).json.items).toEqual([]);
       expect((await search("globex", acme)).json.items).toEqual([]);
 
-      const on = await put(`/admin/tenants/${GLOBEX}/directory`, {
-        token: globex,
-        body: { listed: true },
-      });
-      expect(on.status).toBe(200);
-      expect(TenantCompanyProfileSchema.parse(on.json).directory_listed).toBe(true);
+      await setListed(GLOBEX, true); // CR-191: bật qua đường Sổ Hợp Tác (kiểm ở connect.routes.int.test); ở đây ghi thẳng DB
 
       const byTax = await search("0109876543", acme);
       expect(byTax.status).toBe(200);
@@ -73,39 +70,28 @@ describe("CR-124 q2 · danh bạ công ty", () => {
       expect((await search("ab", acme)).status).toBe(400);
 
       // Acme bật cũng không thấy chính mình; Globex tìm Acme thấy.
-      await put(`/admin/tenants/${ACME}/directory`, { token: acme, body: { listed: true } });
+      await setListed(ACME, true);
       expect((await search("0312345678", acme)).json.items).toEqual([]);
       expect((await search("0312345678", globex)).json.items).toHaveLength(1);
 
       // Tắt ⇒ biến mất.
-      await put(`/admin/tenants/${GLOBEX}/directory`, { token: globex, body: { listed: false } });
+      await setListed(GLOBEX, false);
       expect((await search("0109876543", acme)).json.items).toEqual([]);
     },
     TEST_MS,
   );
 
   it(
-    "chỉ quản trị chính công ty bật/tắt, thiếu MST ⇒ 422, người thường/nền tảng/công ty khác bị chặn",
+    "đường cũ PUT /admin/tenants/:id/directory đã gỡ: mọi vai bị từ chối (403/404), không đổi cờ (CR-191)",
     async () => {
       const binh = await env.token("acme", "binh");
-      const an = await env.token("acme", "an");
-      const hoa = await env.token("globex", "hoa");
       const admin = await env.token("platform", "admin");
       const url = `/admin/tenants/${ACME}/directory`;
-      const body = { listed: true };
-      expect((await put(url, { token: an, body })).status).toBe(403);
-      expect((await put(url, { token: admin, body })).status).toBe(403); // nền tảng không bật hộ
-      expect((await put(url, { token: hoa, body })).status).toBe(404); // công ty khác
-      expect((await search("0312345678", an)).status).toBe(403);
+      for (const token of [binh, admin])
+        expect([403, 404]).toContain((await put(url, { token, body: { listed: true } })).status);
       const [r0] = await env.owner`select directory_listed from admin.tenants where id = ${ACME}`;
       expect(r0?.directory_listed).toBe(false);
-
-      await env.owner`update admin.tenants set tax_code = null where id = ${ACME}`;
-      const bad = await put(url, { token: binh, body });
-      expect(bad.status).toBe(422);
-      expect(bad.json.error.code).toBe("DIRECTORY_NEEDS_PROFILE");
-      await env.owner`update admin.tenants set tax_code = '0312345678' where id = ${ACME}`;
-      expect((await put(url, { token: binh, body })).status).toBe(200);
+      expect((await search("0312345678", await env.token("acme", "an"))).status).toBe(403);
     },
     TEST_MS,
   );
@@ -117,7 +103,7 @@ describe("CR-124 q2 · danh bạ công ty", () => {
       const hoa = await env.token("globex", "hoa");
       const admin = await env.token("platform", "admin");
       const url = `/admin/tenants/${GLOBEX}/directory-verified`;
-      await put(`/admin/tenants/${GLOBEX}/directory`, { token: hoa, body: { listed: true } });
+      await setListed(GLOBEX, true);
       expect((await put(url, { token: hoa, body: { verified: true } })).status).toBe(403);
       expect((await put(url, { token: binh, body: { verified: true } })).status).toBe(404); // công ty khác
 

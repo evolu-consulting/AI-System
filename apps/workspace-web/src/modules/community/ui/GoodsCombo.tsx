@@ -44,7 +44,7 @@ export function GoodsCombo({
         data-testid="goods-input"
         value={value}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onBlur={() => setOpen(false)}
         onChange={(e) => {
           onChange(e.target.value);
           setOpen(true);

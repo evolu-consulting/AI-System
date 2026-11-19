@@ -221,10 +221,6 @@ export const TenantCompanyProfileSchema = z.strictObject({
 });
 export type TenantCompanyProfile = z.infer<typeof TenantCompanyProfileSchema>;
 
-/** `PUT /admin/tenants/:id/directory` — quản trị công ty bật/tắt "cho phép tìm thấy" (cần đã có tên pháp lý + MST). */
-export const TenantDirectoryListedRequestSchema = z.strictObject({ listed: z.boolean() });
-export type TenantDirectoryListedRequest = z.infer<typeof TenantDirectoryListedRequestSchema>;
-
 /** `PUT /admin/tenants/:id/directory-verified` — quản trị nền tảng đặt/xoá dấu "Đã xác minh". */
 export const TenantDirectoryVerifiedRequestSchema = z.strictObject({ verified: z.boolean() });
 export type TenantDirectoryVerifiedRequest = z.infer<typeof TenantDirectoryVerifiedRequestSchema>;

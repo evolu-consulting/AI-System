@@ -5,7 +5,6 @@ import {
   DirectorySearchQuerySchema,
   type DirectorySearchResponse,
   TenantCreateRequestSchema,
-  TenantDirectoryListedRequestSchema,
   TenantDirectoryVerifiedRequestSchema,
   TenantListQuerySchema,
   TenantProfileUpdateRequestSchema,
@@ -16,11 +15,7 @@ import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import { requireTenantScope } from "../../lib/tenant-scope";
 import type { TestHooks } from "../../lib/test-hooks";
-import {
-  searchDirectory,
-  setDirectoryListed,
-  setDirectoryVerified,
-} from "./tenants.directory.service";
+import { searchDirectory, setDirectoryVerified } from "./tenants.directory.service";
 import { getTenantProfile, updateTenantProfile } from "./tenants.profile.service";
 import {
   createTenant,
@@ -75,14 +70,7 @@ export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars
     const input = await parseJson(c, TenantProfileUpdateRequestSchema);
     return c.json(await updateTenantProfile({ ...call(c), actor: c.get("actor") }, id, input));
   });
-  // CR-124 q2 · danh bạ: công ty tự bật/tắt (service chỉ cho tenant_admin của chính công ty); nền tảng đặt "Đã xác minh".
-  r.put("/:id/directory", ...admins, async (c) => {
-    const id = parseIdParam(c);
-    const input = await parseJson(c, TenantDirectoryListedRequestSchema);
-    return c.json(
-      await setDirectoryListed({ ...call(c), actor: c.get("actor") }, id, input.listed),
-    );
-  });
+  // CR-124 q2 · nền tảng đặt "Đã xác minh". CR-191: không còn route bật/tắt danh bạ ở đây (chỉ quản trị Sổ Hợp Tác, PUT /pack/contracts/connect/listing).
   r.put("/:id/directory-verified", ...platform, async (c) => {
     const id = parseIdParam(c);
     const input = await parseJson(c, TenantDirectoryVerifiedRequestSchema);
