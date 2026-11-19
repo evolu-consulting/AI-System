@@ -21,8 +21,7 @@ import type { CommunityDeps } from "./community-deps";
 import { suggestGoods } from "./goods-suggest.service";
 import * as posts from "./post.service";
 import type { FeedFilter } from "./post.sql";
-import { connectedAudience } from "./post-mention.repo";
-import { suggest as suggestPeople } from "./post-mention.service";
+import { listConnectedAudience, suggest as suggestPeople } from "./post-mention.service";
 import { quoteDeps } from "./quote.routes";
 import { hostHints } from "./quote.service";
 import { connectedView, namesOf, postView } from "./views";
@@ -91,17 +90,12 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
 
   r.get("/feed", async (c) => c.json(await feedJson(d, c, await access(c))));
 
-  /** CR-145: gợi ý người «Nhắc tên» (≤ 20, tìm `q`); phạm vi theo bài (`postId`) hoặc bản nháp. Không cấu hình ⇒ rỗng. */
   /** CR-191 · công ty ĐÃ KẾT NỐI + công ty đó có thấy bài với «Ai thấy bài» này không (cho «n/N», «Chọn công ty…», gợi ý «@»). Đối tác ngoài ⇒ rỗng. */
   r.get("/audience-connected", async (c) => {
     const a = await access(c);
     const q = parseWith(ConnectedAudienceQuerySchema, c.req.query());
     if (a.org !== null) return c.json([]);
-    const tenants = (q.tenants ?? "")
-      .split(",")
-      .map((x) => x.trim())
-      .filter(Boolean);
-    return c.json(await d.uow.tenant(a.who, ({ tx }) => connectedAudience(tx, q.mode, tenants)));
+    return c.json(await listConnectedAudience(d.uow, a, q.mode, q.tenants));
   });
 
   /** CR-191 · gợi ý hàng hoá (Cần bán/Cần mua): hàng công ty đã đăng + Sản phẩm & Giá (cổng `goods`). */
@@ -111,6 +105,7 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     return c.json(await suggestGoods(d.uow, a, d.goods, q.q ?? ""));
   });
 
+  /** CR-145: gợi ý người «Nhắc tên» (≤ 20, tìm `q`); phạm vi theo bài (`postId`) hoặc bản nháp. Không cấu hình ⇒ rỗng. */
   r.get("/mentionable-people", async (c) => {
     const a = await access(c);
     const raw = withoutScopeKeys(c.req.query());

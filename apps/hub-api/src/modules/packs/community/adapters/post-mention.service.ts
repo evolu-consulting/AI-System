@@ -106,6 +106,17 @@ export async function saveMentions(
   return replaceMentions(tx, { tenantId: a.who.tenantId, postId, by: a.who.userId, people });
 }
 
+/** CR-191 · công ty đã kết nối + cờ «thấy bài» theo «Ai thấy bài» (`mode`/`tenants` = UUID cách nhau dấu phẩy). Đối tác ngoài ⇒ rỗng. */
+export async function listConnectedAudience(
+  uow: PackUow<{ tx: Tx }>,
+  a: Access,
+  mode: string,
+  tenants: string | undefined,
+): Promise<{ tenantId: string; name: string; sees: boolean }[]> {
+  if (a.org !== null) return [];
+  return uow.tenant(a.who, ({ tx }) => connectedAudience(tx, mode, csv(tenants)));
+}
+
 const csv = (s: string | undefined): string[] =>
   (s ?? "")
     .split(",")
