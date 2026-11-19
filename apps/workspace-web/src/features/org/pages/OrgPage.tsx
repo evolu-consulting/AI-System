@@ -2,6 +2,7 @@
 // lý mỗi người, phòng ban (chỉnh ở admin qua «Chỉnh sơ đồ»). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -9,19 +10,19 @@ import { useTranslation } from "react-i18next";
 import { EditChartButton } from "~/features/org-chart/components/EditChartButton";
 import { Pager } from "~/features/table";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
-import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
+import { PersonPick } from "~/shared/ui/PersonPick";
 import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import {
+  fetchOrg,
   fetchOrgMembers,
-  fetchOrgPeoplePage,
   fetchVisibility,
+  orgFullKey,
   orgKeys,
   putVisibility,
   setManager,
 } from "../api";
-
-const field =
-  "h-[34px] rounded-md border border-rule bg-panel px-2 text-body max-sm:min-h-11 max-sm:w-full";
+import { OrgTabs } from "../components/OrgTabs";
+import { headCandidates, managerNotHead, suggestedHeadOf } from "../lib/org";
 
 export function OrgPage() {
   const { t } = useTranslation();
@@ -30,7 +31,6 @@ export function OrgPage() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [editing, setEditing] = useState<string | null>(null);
   useEffect(() => {
     const h = setTimeout(() => {
       setQ(qRaw.trim());
@@ -44,6 +44,13 @@ export function OrgPage() {
     queryFn: ({ signal }) => fetchOrgMembers(q, (page - 1) * pageSize, pageSize, signal),
     placeholderData: keepPreviousData,
     retry: false,
+  });
+  // CR-189: trưởng phòng + phòng của từng người (một lần, không phân trang) cho ô chọn cấp quản lý.
+  const full = useQuery({
+    queryKey: orgFullKey,
+    queryFn: ({ signal }) => fetchOrg(signal),
+    retry: false,
+    staleTime: 30_000,
   });
   const vis = useQuery({
     queryKey: orgKeys.visibility,
@@ -59,10 +66,16 @@ export function OrgPage() {
       void qc.invalidateQueries({ queryKey: orgKeys.org });
       void qc.invalidateQueries({ queryKey: orgKeys.visibility });
     },
-    onError: (e: unknown) =>
+    onError: (e: unknown) => {
+      const x = e as { code?: string; details?: { reason?: string } };
       setErr(
-        (e as { code?: string }).code === "VALIDATION_ERROR" ? t("contracts.org.cycle") : String(e),
-      ),
+        x.code !== "VALIDATION_ERROR"
+          ? String(e)
+          : x.details?.reason === "manager_not_head"
+            ? t("contracts.org.notHeadError")
+            : t("contracts.org.cycle"),
+      );
+    },
   });
   const act = (fn: () => Promise<unknown>) => run.mutate(fn);
 
@@ -75,35 +88,61 @@ export function OrgPage() {
   const rows = org.data?.items ?? [];
   const total = org.data?.total ?? 0;
 
-  const managerCell = (m: (typeof rows)[number]) =>
-    editing === m.user_id ? (
-      <PersonSearchSelect
-        source="org-members"
-        fetchPage={fetchOrgPeoplePage}
-        value={m.manager_id ?? ""}
-        valueName={m.manager_name ?? undefined}
-        excludeId={m.user_id}
-        noneLabel={t("contracts.org.none")}
-        disabled={run.isPending}
-        onChange={(id) => {
-          setEditing(null);
-          act(() => setManager(m.user_id, id || null));
-        }}
-      />
-    ) : (
-      <button
-        type="button"
-        aria-label={`${t("contracts.org.manager")} · ${m.display_name}`}
-        className={`${field} text-left`}
-        disabled={run.isPending}
-        onClick={() => setEditing(m.user_id)}
-      >
-        {m.manager_name ?? t("contracts.org.none")}
-      </button>
+  const managerCell = (m: (typeof rows)[number]) => {
+    const org = full.data;
+    const sug = org ? suggestedHeadOf(org.departments, m.user_id) : null;
+    const sugName = sug ? org?.members.find((x) => x.user_id === sug)?.display_name : undefined;
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <PersonPick
+          source={`org-heads:${m.user_id}`}
+          fetchPage={async (q) => ({
+            items: org ? headCandidates(org, m.user_id, q) : [],
+            next: null,
+          })}
+          value={m.manager_id ?? ""}
+          valueName={m.manager_name ?? undefined}
+          clearable
+          placeholder={t("contracts.org.managerPlaceholder")}
+          ariaLabel={`${t("contracts.org.manager")} · ${m.display_name}`}
+          onChange={(id) => act(() => setManager(m.user_id, id || null))}
+        />
+        {org && m.manager_id && managerNotHead(org, m.manager_id) && (
+          <span
+            data-testid="manager-not-head"
+            className="rounded-md bg-warning-bg px-2 py-0.5 text-caption font-semibold text-warning"
+          >
+            {t("contracts.org.notHead")}
+          </span>
+        )}
+        {sug && sugName && !m.manager_id && (
+          <button
+            type="button"
+            data-testid="manager-suggest"
+            disabled={run.isPending}
+            className="text-caption text-act underline"
+            onClick={() => act(() => setManager(m.user_id, sug))}
+          >
+            {t("contracts.org.suggest", { name: sugName })}
+          </button>
+        )}
+      </div>
     );
+  };
+
+  const nameCell = (m: (typeof rows)[number]) => (
+    <span className="flex min-w-0 items-center gap-2">
+      <PersonAvatar name={m.display_name} id={m.user_id} size={32} interactive={false} />
+      <span className="min-w-0">
+        <TruncText text={m.display_name} className="block font-medium" />
+        <TruncText text={m.job_title || m.username} className="block text-sm text-dim" />
+      </span>
+    </span>
+  );
 
   return (
     <section className="flex flex-col gap-5 max-sm:pb-24">
+      <OrgTabs active="members" />
       <PageHeader title={t("contracts.org.title")} description={t("contracts.org.lead")} />
       {err && (
         <p
@@ -146,10 +185,7 @@ export function OrgPage() {
                 key={m.user_id}
                 className="flex flex-col gap-2 border-t border-rule px-4 py-3 first:border-t-0"
               >
-                <span className="min-w-0">
-                  <TruncText text={m.display_name} className="block font-medium" />
-                  <TruncText text={m.username} className="block text-sm text-dim" />
-                </span>
+                {nameCell(m)}
                 <span className="flex flex-col gap-1 text-sm text-dim">
                   {t("contracts.org.manager")}
                   {managerCell(m)}
@@ -168,10 +204,7 @@ export function OrgPage() {
             <tbody>
               {rows.map((m) => (
                 <tr key={m.user_id} className="border-t border-rule">
-                  <td className="px-3 py-2">
-                    <span className="font-medium">{m.display_name}</span>
-                    <span className="ml-2 text-dim">{m.username}</span>
-                  </td>
+                  <td className="px-3 py-2">{nameCell(m)}</td>
                   <td className="px-3 py-2">{managerCell(m)}</td>
                 </tr>
               ))}

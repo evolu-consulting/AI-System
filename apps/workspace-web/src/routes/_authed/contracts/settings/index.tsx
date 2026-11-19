@@ -15,6 +15,6 @@ export const Route = createFileRoute("/_authed/contracts/settings/")({
       openSettings(sec);
       throw redirect({ to: "/contracts", replace: true });
     }
-    throw redirect({ to: "/contracts/settings/members", replace: true });
+    throw redirect({ to: "/contracts/org", replace: true }); // CR-189: «Thành viên & phòng ban» mở tab «Sơ đồ tổ chức» trước
   },
 });

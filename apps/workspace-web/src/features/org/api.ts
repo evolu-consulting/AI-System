@@ -35,3 +35,6 @@ export async function fetchOrgPeoplePage(q: string, offset: number, signal?: Abo
     next: end < r.total ? end : null,
   };
 }
+
+/** CR-189: ứng viên cấp quản lý = trưởng phòng (một trang, ≤ ORG_MEMBERS_MAX người nội bộ đã có sẵn ở `/admin/org`). */
+export const orgFullKey = [...orgKeys.org, "full"] as const;

@@ -13,6 +13,12 @@
       "manager": "Cấp quản lý",
       "none": "—",
       "cycle": "Không thể chọn: người này đang là cấp dưới (vòng quản lý).",
+      "tabChart": "Sơ đồ tổ chức",
+      "tabMembers": "Thành viên",
+      "managerPlaceholder": "Chọn trưởng phòng",
+      "suggest": "Gợi ý: {{name}}",
+      "notHead": "Không phải trưởng phòng",
+      "notHeadError": "Chỉ chọn được trưởng phòng làm cấp quản lý.",
       "deptsMoved": "Phòng ban (thêm phòng, phòng cha, trưởng phòng, thành viên) chỉnh ở một nơi: sơ đồ tổ chức ở admin."
     }
   }

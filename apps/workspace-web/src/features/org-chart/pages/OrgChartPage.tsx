@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
+import { OrgTabs } from "~/features/org/components/OrgTabs";
 import { fetchOrgChart, orgChartKey } from "../api";
 import { EditChartButton } from "../components/EditChartButton";
 import { OrgChartBody } from "../components/OrgChartBody";
@@ -20,6 +21,7 @@ export function OrgChartPage() {
   });
   return (
     <div data-testid="org-chart">
+      <OrgTabs active="chart" />
       <PageHeader
         className="mb-5"
         title={t("contracts.orgChart.title")}

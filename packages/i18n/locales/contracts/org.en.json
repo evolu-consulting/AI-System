@@ -13,6 +13,12 @@
       "manager": "Manager",
       "none": "—",
       "cycle": "Not allowed: this person reports to them (management loop).",
+      "tabChart": "Org chart",
+      "tabMembers": "Members",
+      "managerPlaceholder": "Pick a department head",
+      "suggest": "Suggested: {{name}}",
+      "notHead": "Not a department head",
+      "notHeadError": "Only a department head can be a reporting manager.",
       "deptsMoved": "Departments (add, parent, head, members) are edited in one place: the org chart in admin."
     }
   }

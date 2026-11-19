@@ -164,13 +164,23 @@ async function listAs(page: Page, f: Fake, who: Who): Promise<string[]> {
   return seen;
 }
 
-test("M1D · /settings chuyển thẳng tới 'Thành viên & phòng ban' (/settings/members)", async ({
+test("CR-189 · /settings mở tab Sơ đồ tổ chức đầu tiên, tab Thành viên thứ hai, link cũ vẫn tới Thành viên", async ({
   page,
 }) => {
   await install(page);
   await page.goto("/settings");
+  await expect(page).toHaveURL(/\/contracts\/org$/);
+  await expect(page.getByTestId("org-tabs").getByRole("link")).toHaveText([
+    "Sơ đồ tổ chức",
+    "Thành viên",
+  ]);
+  await expect(page.getByTestId("org-tab-chart")).toHaveAttribute("aria-current", "page");
+  await page.getByTestId("org-tab-members").click();
   await expect(page).toHaveURL(/\/contracts\/settings\/members$/);
   await expect(page.getByRole("heading", { name: "Thành viên & phòng ban" })).toBeVisible();
+  await page.goto("/settings/members");
+  await expect(page).toHaveURL(/\/contracts\/settings\/members$/);
+  await expect(page.getByTestId("org-tab-members")).toHaveAttribute("aria-current", "page");
 });
 
 test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của quản lý / trưởng phòng / người xem đổi theo", async ({
@@ -187,22 +197,38 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   await page.goto("/contracts/settings/members");
   await pickOption(page.getByLabel("Phạm vi xem hợp đồng"), "org");
   await expect.poll(() => f.mode).toBe("org");
-  // CR-151: chọn quản lý qua hộp tìm ở máy chủ (không còn select nạp cả công ty).
+  // Dữ liệu phòng dựng thẳng ở backend giả (admin-web ghi qua API riêng; e2e cr139d-org-tree): "Kinh doanh" do Dũng làm trưởng,
+  // Bình là thành viên; Bình cũng làm trưởng phòng "Vận hành" (CR-189: cấp quản lý chỉ chọn được trưởng phòng).
+  f.depts.push(
+    {
+      group_id: uid(0xe0),
+      key: "kd",
+      name: "Kinh doanh",
+      head_user_id: USERS.dung.id,
+      parent_group_id: null,
+      member_ids: [USERS.binh.id],
+    },
+    {
+      group_id: uid(0xe1),
+      key: "vh",
+      name: "Vận hành",
+      head_user_id: USERS.binh.id,
+      parent_group_id: null,
+      member_ids: [],
+    },
+  );
+  await page.reload();
+  // CR-189: chọn cấp quản lý trong ô thả xuống (avatar + tên), chỉ có trưởng phòng.
   await page.getByLabel("Cấp quản lý · Chi Lê").click();
-  await page.getByTestId("person-search").getByLabel("Tìm theo tên").fill("Bình");
-  await page.getByTestId("person-search").getByRole("button", { name: "Bình Trần" }).click();
+  const list = page.getByTestId("person-pick-list");
+  await expect(list.getByRole("button", { name: /Bình Trần/ })).toBeVisible();
+  await expect(list.getByRole("button", { name: /Dũng Phạm/ })).toBeVisible();
+  await expect(list.getByRole("button", { name: /Chi Lê/ })).toHaveCount(0); // không phải trưởng phòng
+  await list.getByRole("button", { name: /Bình Trần/ }).click();
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBe(USERS.binh.id);
+  await expect(page.getByTestId("manager-not-head")).toHaveCount(0);
   // CR-139d · phòng ban không chỉnh ở màn này nữa (một khái niệm một màn): màn chỉ dẫn sang «Chỉnh sơ đồ» ở admin.
   await expect(page.getByTestId("org-depts-moved")).toBeVisible();
-  // Dữ liệu phòng "Kinh doanh" do Dũng làm trưởng, Bình là thành viên được dựng thẳng ở backend giả (admin-web ghi qua API riêng; e2e cr139d-org-tree).
-  f.depts.push({
-    group_id: uid(0xe0),
-    key: "kd",
-    name: "Kinh doanh",
-    head_user_id: USERS.dung.id,
-    parent_group_id: null,
-    member_ids: [USERS.binh.id],
-  });
   expect(f.puts).toContainEqual({ path: "visibility", body: { mode: "org" } });
 
   // Sau: mỗi người chỉ thấy phần của mình.
@@ -215,7 +241,34 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   f.who = "lan";
   await page.goto("/contracts/settings/members");
   await page.getByLabel("Cấp quản lý · Chi Lê").click();
-  await page.getByTestId("person-search").getByRole("button", { name: "—", exact: true }).click();
+  await page
+    .getByTestId("person-pick-list")
+    .getByRole("button", { name: "Chọn trưởng phòng" })
+    .click();
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBeNull();
   expect(await listAs(page, f, "binh")).toEqual([VAN_CHUYEN]);
+});
+
+test("CR-189 · quản lý cũ không phải trưởng phòng giữ nguyên + cảnh báo vàng, bấm gợi ý là gán", async ({
+  page,
+}) => {
+  const f = await install(page);
+  f.depts.push({
+    group_id: uid(0xe0),
+    key: "kd",
+    name: "Kinh doanh",
+    head_user_id: USERS.dung.id,
+    parent_group_id: null,
+    member_ids: [USERS.binh.id],
+  });
+  f.managers.set(USERS.chi.id, USERS.binh.id); // dữ liệu cũ: Bình quản lý Chi nhưng không là trưởng phòng
+  await page.goto("/contracts/settings/members");
+  const chiRow = page.getByRole("row", { name: /Chi Lê/ });
+  await expect(chiRow.getByTestId("manager-not-head")).toHaveText("Không phải trưởng phòng");
+  await expect(page.getByLabel("Cấp quản lý · Chi Lê")).toContainText("Bình Trần"); // giữ nguyên
+  expect(f.managers.get(USERS.chi.id)).toBe(USERS.binh.id);
+  // Bình thuộc phòng Kinh doanh (trưởng phòng Dũng), chưa có cấp quản lý ⇒ gợi ý Dũng.
+  const binhRow = page.getByRole("row", { name: /Bình Trần/ });
+  await binhRow.getByTestId("manager-suggest").click();
+  await expect.poll(() => f.managers.get(USERS.binh.id)).toBe(USERS.dung.id);
 });

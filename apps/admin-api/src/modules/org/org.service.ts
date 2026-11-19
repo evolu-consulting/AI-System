@@ -82,7 +82,7 @@ export function listOrgMembers(c: OrgCall, q: OrgMembersQuery): Promise<OrgMembe
   });
 }
 
-/** Gán (upsert) hoặc bỏ (null) quản lý của `userId`. User/quản lý ngoài tenant ⇒ 404; vòng ⇒ 400 `manager_cycle`. */
+/** Gán (upsert) hoặc bỏ (null) quản lý của `userId`. User/quản lý ngoài tenant ⇒ 404; vòng ⇒ 400 `manager_cycle`; gán MỚI người không phải trưởng phòng ⇒ 400 `manager_not_head` (CR-189). */
 export function setManager(
   c: OrgCall,
   q: string | undefined,
@@ -120,6 +120,13 @@ export function setManager(
             throw appError("VALIDATION_ERROR", { reason: "manager_cycle" });
           throw err;
         });
+      // CR-189 BR-189-5: gán MỚI chỉ cho trưởng phòng (kiểm sau các ràng buộc khác; throw ⇒ cả tx lùi, bản ghi cũ giữ nguyên).
+      // Gán lại đúng người đang là quản lý = không đổi ⇒ không kiểm (dữ liệu cũ giữ).
+      if (u[0].manager_id !== input.manager_id) {
+        const head = (await tx.execute(sql`select 1 from admin.departments
+          where tenant_id = ${t}::uuid and head_user_id = ${input.manager_id}::uuid limit 1`)) as unknown as unknown[];
+        if (head.length === 0) throw appError("VALIDATION_ERROR", { reason: "manager_not_head" });
+      }
     }
     ch.changed({ entity: "user", tenantId: t });
     ch.audit(

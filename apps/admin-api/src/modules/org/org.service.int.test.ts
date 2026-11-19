@@ -37,6 +37,13 @@ const call: OrgCall = {
 const user = (id: string, tid: string, name: string, role = "member") =>
   owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, email)
     values (${id}, ${tid}, ${name}, 'x', ${name}, ${role}, ${`${name}@x.test`})`;
+// CR-189: cấp quản lý chỉ là trưởng phòng ⇒ dựng một phòng do `id` làm trưởng (dữ liệu dựng bằng owner SQL, khác người gán).
+const makeHead = async (id: string, key: string) => {
+  const [g] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
+    values (${TID}, ${key}, ${JSON.stringify({ vi: key })}::text::jsonb) returning id`;
+  await setDepartment(call, undefined, g?.id as string, { head_user_id: id });
+  return g?.id as string;
+};
 const fails = async (p: Promise<unknown>, code: ErrorCode) =>
   isAppError(await p.catch((e) => e), code);
 
@@ -61,6 +68,8 @@ afterAll(async () => {
 
 describe("M1D-FR-02 · quản lý trực tiếp", () => {
   test("gán chuỗi U3→U2→U1, đọc lại manager_id; closure 3 cặp; bỏ quản lý U2 ⇒ còn 1 cặp", async () => {
+    await makeHead(U1, "p1");
+    await makeHead(U2, "p2");
     await setManager(call, undefined, U2, { manager_id: U1 });
     await setManager(call, undefined, U3, { manager_id: U2 });
     const org = await getOrg(call, undefined);
@@ -77,6 +86,8 @@ describe("M1D-FR-02 · quản lý trực tiếp", () => {
     expect(await n()).toBe(1);
   });
   test("vòng (U1 nhận U3 làm quản lý khi U3 dưới U1) và tự quản lý ⇒ VALIDATION_ERROR; không ghi gì", async () => {
+    await makeHead(U1, "p1");
+    await makeHead(U2, "p2");
     await setManager(call, undefined, U2, { manager_id: U1 });
     await setManager(call, undefined, U3, { manager_id: U2 });
     expect(
@@ -224,6 +235,7 @@ describe("M1c · audit đổi quản lý / trưởng phòng ghi giá trị cũ (
         where tenant_id = ${TID} and entity_id = ${id} order by seq desc limit 1`
     )[0]?.s;
   test("bỏ quản lý U2 (đang là U1) ⇒ summary.before.manager_id = U1; đổi trưởng phòng ⇒ before.head cũ", async () => {
+    await makeHead(U1, "pre");
     await setManager(call, undefined, U2, { manager_id: U1 });
     await setManager(call, undefined, U2, { manager_id: null });
     const [g] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
@@ -290,6 +302,7 @@ describe("CR-147b · chức vụ nhân viên (hub.people_profiles.job_title, adm
 
 describe("CR-151 · trang thành viên (listOrgMembers)", () => {
   test("trang 2 đúng, tổng đúng, tìm theo tên, chéo tenant không lộ, kèm tên quản lý", async () => {
+    await makeHead(U1, "p1");
     await setManager(call, undefined, U2, { manager_id: U1 });
     const p1 = await listOrgMembers(call, { limit: 2, offset: 0 });
     const p2 = await listOrgMembers(call, { limit: 2, offset: 2 });
@@ -363,5 +376,50 @@ describe("CR-187 · BR-187-2 · thành viên và cơ cấu chỉ người nội 
       { n: number }[]
     >`select count(*)::int as n from admin.user_managers where tenant_id = ${TID}`;
     expect(n?.n).toBe(0);
+  });
+});
+
+describe("CR-189 · BR-189-5 · cấp quản lý chỉ là trưởng phòng (gán MỚI)", () => {
+  const ADMIN2 = "01900000-0000-7000-8000-0000000f1033"; // người gán khác người dựng dữ liệu (N2)
+  const callAs2: OrgCall = { ...call, actor: { ...call.actor, userId: ADMIN2 } };
+  const mgrOf = async (id: string) =>
+    (
+      await owner<
+        { manager_id: string }[]
+      >`select manager_id from admin.user_managers where user_id = ${id}`
+    )[0]?.manager_id ?? null;
+  beforeEach(async () => {
+    await user(ADMIN2, TID, "cuong", "tenant_admin");
+  });
+  test("gán người không phải trưởng phòng ⇒ 400 manager_not_head, không ghi", async () => {
+    const e = (await setManager(callAs2, undefined, U2, { manager_id: U1 }).catch((x) => x)) as {
+      code?: string;
+      details?: { reason?: string };
+    };
+    expect([e.code, e.details?.reason]).toEqual(["VALIDATION_ERROR", "manager_not_head"]);
+    expect(await mgrOf(U2)).toBeNull();
+  });
+  test("gán trưởng phòng hoặc để trống ⇒ ok", async () => {
+    await makeHead(U1, "kd");
+    await makeHead(U3, "kt");
+    await setManager(callAs2, undefined, U2, { manager_id: U1 });
+    expect(await mgrOf(U2)).toBe(U1);
+    await setManager(callAs2, undefined, U2, { manager_id: U3 });
+    expect(await mgrOf(U2)).toBe(U3);
+    await setManager(callAs2, undefined, U2, { manager_id: null });
+    expect(await mgrOf(U2)).toBeNull();
+  });
+  test("dữ liệu cũ giữ: quản lý không phải trưởng phòng không bị xoá, gán lại ok, đổi sang người không phải trưởng phòng ⇒ 400 giữ bản cũ", async () => {
+    await owner`insert into admin.user_managers (tenant_id, user_id, manager_id, updated_by)
+      values (${TID}, ${U2}, ${U3}, ${ADMIN})`;
+    expect(await mgrOf(U2)).toBe(U3);
+    await setManager(callAs2, undefined, U2, { manager_id: U3 });
+    expect(await mgrOf(U2)).toBe(U3);
+    expect(
+      await fails(setManager(callAs2, undefined, U2, { manager_id: U1 }), "VALIDATION_ERROR"),
+    ).toBe(true);
+    expect(await mgrOf(U2)).toBe(U3);
+    await setManager(callAs2, undefined, U2, { manager_id: null });
+    expect(await mgrOf(U2)).toBeNull();
   });
 });

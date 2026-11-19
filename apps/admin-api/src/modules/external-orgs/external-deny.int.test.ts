@@ -127,11 +127,6 @@ describe("com-c2 (TB-1) · đối tác không vào cây quản lý / trưởng p
       body: { manager_id: USER_ID.binh },
     });
     expect([managed.status, errCode(managed)]).toEqual([422, "EXTERNAL_USER_NOT_ALLOWED"]);
-    const ok = await env.call("PUT", `/admin/org/managers/${USER_ID.an}`, {
-      token: t,
-      body: { manager_id: USER_ID.binh },
-    });
-    expect(ok.status).toBe(200);
     const g = await env.post("/admin/groups", {
       token: t,
       body: { key: "phong-c2", name: { vi: "Phòng C2" } },
@@ -146,6 +141,12 @@ describe("com-c2 (TB-1) · đối tác không vào cây quản lý / trưởng p
       body: { head_user_id: USER_ID.binh },
     });
     expect(headOk.status).toBe(200);
+    // CR-189: cấp quản lý chỉ là trưởng phòng ⇒ gán Bình sau khi Bình đã là trưởng phòng.
+    const ok = await env.call("PUT", `/admin/org/managers/${USER_ID.an}`, {
+      token: t,
+      body: { manager_id: USER_ID.binh },
+    });
+    expect(ok.status).toBe(200);
   });
 
   it("DB (trigger 0029): ghi thẳng user_managers / departments.head_user_id với đối tác ⇒ 23514", async () => {
