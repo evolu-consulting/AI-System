@@ -27,12 +27,12 @@ BR-187-2: danh sách Thành viên và cơ cấu (`/admin/org`, `/admin/org/membe
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED org/nghiep-vu.md
+### ADDED admin/co-cau-to-chuc.md
 #### Yêu cầu: Thành viên và phòng ban chỉ người nội bộ (CR-187)
 Danh sách thành viên, tổng số và mọi ô chọn thành viên/phòng/quản lý chỉ gồm người nội bộ công ty; tài khoản đối tác không hiện. Gán đối tác làm quản lý/trưởng phòng bị từ chối rõ nghĩa (422).
-- Kịch bản: khi quản trị xem cơ cấu hoặc danh sách thành viên thì không có người đối tác, tổng số không tính họ [test: apps/admin-api/src/modules/org/org.service.int.test.ts » CR-187 · BR-187-2 · thành viên và cơ cấu chỉ người nội bộ > listOrgMembers: người ngoài không có trong trang, không tính vào tổng, tìm theo tên cũng không ra]
-- Kịch bản: khi một quản trị khác người tạo dữ liệu mở cơ cấu thì cũng không thấy đối tác [test: apps/admin-api/src/modules/org/org.service.int.test.ts » CR-187 · BR-187-2 · thành viên và cơ cấu chỉ người nội bộ > getOrg: người ngoài không có trong danh sách thành viên (quản trị khác người tạo vẫn thấy đúng)]
-- Kịch bản: khi gán đối tác làm quản lý hoặc trưởng phòng thì báo 422 và không ghi gì [test: apps/admin-api/src/modules/org/org.service.int.test.ts » CR-187 · BR-187-2 · thành viên và cơ cấu chỉ người nội bộ > gán người ngoài làm quản lý / được quản lý / trưởng phòng ⇒ 422 EXTERNAL_USER_NOT_ALLOWED, không ghi]
+- Kịch bản: khi quản trị xem cơ cấu hoặc danh sách thành viên thì không có người đối tác, tổng số không tính họ [test: apps/admin-api/src/modules/org/org.service.int.test.ts » listOrgMembers: người ngoài không có trong trang, không tính vào tổng, tìm theo tên cũng không ra]
+- Kịch bản: khi một quản trị khác người tạo dữ liệu mở cơ cấu thì cũng không thấy đối tác [test: apps/admin-api/src/modules/org/org.service.int.test.ts » getOrg: người ngoài không có trong danh sách thành viên (quản trị khác người tạo vẫn thấy đúng)]
+- Kịch bản: khi gán đối tác làm quản lý hoặc trưởng phòng thì báo 422 và không ghi gì [test: apps/admin-api/src/modules/org/org.service.int.test.ts » gán người ngoài làm quản lý / được quản lý / trưởng phòng ⇒ 422 EXTERNAL_USER_NOT_ALLOWED, không ghi]
 - Kịch bản: khi quản trị mở trang Thành viên thật thì không thấy đối tác [test: e2e/journey-approval/cr187-members.spec.ts » quản trị thấy danh sách thành viên không có đối tác]
 
 ## Việc còn lại
