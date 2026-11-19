@@ -17,7 +17,7 @@ BR-188-5: bấm một bản ⇒ ngăn «Giấy tờ đã ký bằng chữ ký n�
 - [x] Web: `SignatureVersions` (số bản, «Đang dùng»), `SignedDocsPanel` (lọc + «Mở» + «Xem thêm»), `lib/versions.ts`, hook `useSigDocs`, i18n `contracts.mySig.versions|docs`.
 
 ## Không làm / Chạm
-Không sửa `hub.user_signatures`, không thêm hàm hub. Chủ chữ ký suy từ `sign_marks.signer_id` (không đọc bảng hub): chữ ký chưa in lên giấy tờ nào ⇒ rỗng; có dấu của người khác ⇒ 403 trừ quản trị. Màn của quản trị xem chữ ký người khác chưa có (chỉ API, BR-188-4: ai xem = chính chủ + quản trị).
+Không sửa `hub.user_signatures`, không thêm hàm hub. Chủ chữ ký suy từ `sign_marks.signer_id` (không đọc bảng hub): người không phải quản trị hỏi chữ ký không phải của mình ⇒ luôn 200 rỗng (không phân biệt «chưa ký» với «của người khác», soát Opus #1). Màn của quản trị xem chữ ký người khác chưa có (chỉ API, BR-188-4: ai xem = chính chủ + quản trị).
 
 ## Test tối thiểu
 unit `sig-docs.rules.test.ts`, `sig-docs.test.tsx`; int `sig-docs.int.test.ts` (evotest `-Dirty`); e2e `e2e/cr181/cr188-sig-docs.spec.ts` (chưa chạy).
@@ -26,6 +26,7 @@ unit `sig-docs.rules.test.ts`, `sig-docs.test.tsx`; int `sig-docs.int.test.ts` (
 - Ai là chủ chữ ký: `sign_marks.signer_id` = chủ (người ký thật); quản trị công ty = `tenant_admin` ∨ quyền `admin` gói Sổ Hợp Tác (cùng luật `ledger.routes.ts isAdmin`).
 - HĐ đã giao cho người khác thì người tạo hết quyền mở ⇒ không hiện ở danh sách của người tạo (đúng RLS xem HĐ).
 - «Giấy tờ khác» = HĐ khung/giao dịch (`doc_type <> 'contract'`, không phải phụ lục) — cùng `docKindOf` của Kiểm tra tệp.
+- Soát Opus #1: chọn 200 rỗng (không 404) vì chữ ký của chính mình chưa ký gì vẫn phải mở được ngăn rỗng; hai ca lạ trả cùng mã + cùng thân. Lọc ngày theo múi giờ công ty (`timeZoneOf`), kiểm UUID bằng `z.uuid()`.
 - Bản ký đã huỷ (`voided_at`) không tính. «Mở» đưa tới trang HĐ `/contracts/c/:id`.
 - Số bản đếm riêng cho chữ ký chính và chữ ký tắt, cũ nhất = 1.
 - Journal: `idx` 118 trùng với 0126-cr190 ở nhánh của nó ⇒ điều phối đổi idx của 0126 thành 119 khi gộp.
@@ -36,7 +37,8 @@ Trạng thái gộp: chưa gộp
 ### ADDED pack-contracts/giay-to-da-ky-bang-chu-ky.md
 #### Yêu cầu: Giấy tờ đã ký bằng chữ ký này
 Từ một phiên bản chữ ký, xem HĐ / phụ lục / giấy tờ khác đã ký bằng nó (mới → cũ, 50 dòng một trang, một câu SQL), lọc theo loại và khoảng ngày, mỗi dòng có «Mở». Chỉ hiện giấy tờ người xem có quyền mở. Chỉ chính chủ và quản trị công ty xem được.
-- Kịch bản: khi người khác không phải quản trị hỏi chữ ký của tôi thì bị từ chối [test: apps/hub-api/src/modules/packs/contracts/adapters/sig-docs.int.test.ts » người KHÁC (không phải quản trị) hỏi chữ ký của u1 ⇒ 403]
+- Kịch bản: khi người khác không phải quản trị hỏi chữ ký của tôi thì nhận danh sách rỗng, giống hệt chữ ký chưa ai dùng [test: apps/hub-api/src/modules/packs/contracts/adapters/sig-docs.int.test.ts » người KHÁC (không phải quản trị) hỏi chữ ký của u1 hay chữ ký chưa ai dùng thì nhận kết quả GIỐNG HỆT, rỗng]
+- Kịch bản: khi lọc ngày thì tính theo múi giờ công ty [test: apps/hub-api/src/modules/packs/contracts/adapters/sig-docs.int.test.ts » lọc ngày theo múi giờ công ty (giờ VN), không theo UTC]
 - Kịch bản: khi quản trị hỏi chữ ký của người khác thì xem được [test: apps/hub-api/src/modules/packs/contracts/adapters/sig-docs.int.test.ts » quản trị xem được chữ ký của người khác]
 - Kịch bản: khi người được giao (không phải người tạo) xem thì thấy HĐ của mình, HĐ không có quyền không hiện [test: apps/hub-api/src/modules/packs/contracts/adapters/sig-docs.int.test.ts » N2: người được giao (không phải người tạo) thấy HĐ giao cho mình, HĐ không có quyền mở KHÔNG hiện]
 - Kịch bản: khi lọc theo loại thì chỉ ra đúng loại [test: apps/hub-api/src/modules/packs/contracts/adapters/sig-docs.int.test.ts » lọc theo loại]

@@ -1,10 +1,9 @@
 // CR-188 · BR-188-5 «Giấy tờ đã ký bằng chữ ký này»: MỘT câu SQL (số câu cố định) — dấu ký của đúng phiên bản chữ ký (`sign_marks`, chỉ mục 0125)
 // ⨝ bản ký chưa huỷ ⨝ HĐ dưới RLS «xem HĐ»: HĐ người gọi không mở được thì KHÔNG có hàng. Cờ `foreign` báo chữ ký đã in bởi người KHÁC người gọi
-// (người gọi không phải quản trị ⇒ ném 403 trước khi trả bất cứ hàng nào).
+// (người gọi không phải quản trị ⇒ trả RỖNG, giống hệt chữ ký chưa ký gì: không lộ «đã ký hay chưa»).
 import { SIG_DOCS_PAGE, type SigDocItem, type SigDocKind } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { AppError } from "../../../../lib/errors";
 import { docKindOf } from "../domain/verify-file.rules";
 import { contractNameSql } from "./contract-name.sql";
 
@@ -39,10 +38,10 @@ const KIND_COND = {
 } as const;
 
 /** Điều kiện lọc (loại, khoảng ngày gồm cả ngày cuối, con trỏ) — chỉ tham số hoá, không nối chuỗi. */
-function filterSql(f: SigDocsFilter) {
+function filterSql(f: SigDocsFilter, tz: string) {
   const kind = f.kind ? KIND_COND[f.kind] : sql``;
-  const from = f.from ? sql`and v.created_at >= ${f.from}::date` : sql``;
-  const to = f.to ? sql`and v.created_at < (${f.to}::date + 1)` : sql``;
+  const from = f.from ? sql`and (v.created_at at time zone ${tz})::date >= ${f.from}::date` : sql``;
+  const to = f.to ? sql`and (v.created_at at time zone ${tz})::date <= ${f.to}::date` : sql``;
   const cur = f.cursor
     ? sql`and (v.created_at, v.id) < (${f.cursor.at}::timestamptz, ${f.cursor.id}::uuid)`
     : sql``;
@@ -68,6 +67,7 @@ export function sigDocsRepo(tx: Tx, tenantId: string) {
     list: async (
       userId: string,
       isAdmin: boolean,
+      timeZone: string,
       sigId: string,
       f: SigDocsFilter,
     ): Promise<SigDocsPage> => {
@@ -86,12 +86,12 @@ export function sigDocsRepo(tx: Tx, tenantId: string) {
             join contracts.sign_versions v on v.id = mk.version_id and v.tenant_id = ${tenantId}::uuid and v.voided_at is null
             join contracts.contracts c on c.id = v.contract_id and c.tenant_id = v.tenant_id
             join contracts.files f on f.id = v.file_id and f.tenant_id = v.tenant_id
-           where true ${filterSql(f)}
+           where true ${filterSql(f, timeZone)}
            order by v.created_at desc, v.id desc limit ${SIG_DOCS_PAGE + 1})
         select own.foreign, page.version_id, page.contract_id, page.title, page.kind, page.doc_type, page.partner, page.file_name, page.seq, page.signed_at
           from own left join page on true
          order by page.ord_at desc nulls last, page.ord_id desc nulls last`);
-      if (res[0]?.foreign && !isAdmin) throw new AppError("FORBIDDEN", 403, "Not your signature");
+      if (res[0]?.foreign && !isAdmin) return [];
       return res.map(toItem).filter((x): x is SigDocItem => x !== null);
     },
   };

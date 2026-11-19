@@ -1,7 +1,7 @@
 // CR-188 · BR-188-5: luật thuần của «Giấy tờ đã ký bằng chữ ký này» — con trỏ trang (created_at, id).
 import { SIG_DOCS_PAGE } from "@ai/contracts/pack-contracts";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { z } from "zod";
 
 export type SigDocCursor = { at: string; id: string };
 
@@ -12,7 +12,7 @@ export function decodeCursor(raw: string | undefined): SigDocCursor | null {
   if (!raw) return null;
   const [at, id, extra] = raw.split("|");
   if (!at || !id || extra !== undefined) return null;
-  if (!UUID_RE.test(id) || Number.isNaN(Date.parse(at))) return null;
+  if (!z.uuid().safeParse(id).success || Number.isNaN(Date.parse(at))) return null;
   return { at: new Date(at).toISOString(), id };
 }
 

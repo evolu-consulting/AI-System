@@ -147,8 +147,9 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
   r.route(
     "/",
     sigDocsRoutes(d.view, {
-      list: (who, admin, sigId, f) =>
-        sigDocsUow.tenant(who, (x) => x.docs.list(who.userId, admin, sigId, f)),
+      timeZoneOf: d.timeZoneOf,
+      list: (who, admin, tz, sigId, f) =>
+        sigDocsUow.tenant(who, (x) => x.docs.list(who.userId, admin, tz, sigId, f)),
     }),
   );
   return r.route(

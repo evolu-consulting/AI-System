@@ -22,6 +22,7 @@ let c5 = "";
 let sigU1 = "";
 let sigU2 = "";
 let sigNone = "";
+let sigTz = "";
 let statements = 0;
 
 const uow = () =>
@@ -35,7 +36,7 @@ const uow = () =>
   });
 const list = (userId: string, admin: boolean, sig: string, f: Partial<SigDocsFilter> = {}) =>
   uow().tenant({ tenantId: A, userId }, (r) =>
-    r.docs.list(userId, admin, sig, { cursor: null, ...f }),
+    r.docs.list(userId, admin, "Asia/Ho_Chi_Minh", sig, { cursor: null, ...f }),
   );
 
 async function mkFile(by: string, name: string): Promise<string> {
@@ -95,6 +96,7 @@ beforeAll(async () => {
   sigU1 = Bun.randomUUIDv7();
   sigU2 = Bun.randomUUIDv7();
   sigNone = Bun.randomUUIDv7();
+  sigTz = Bun.randomUUIDv7();
   // Chữ ký của u1: c1 (hợp đồng, 10/10), c3 (phụ lục, 15/10), c4 (đã giao u2 ⇒ u1 hết quyền mở, 20/10), c5 (khác, 25/10), c1 bản đã huỷ (không tính).
   await signed(c1, u1, sigU1, "hd", "2026-10-10T03:00:00Z");
   await signed(c3, u1, sigU1, "pl", "2026-10-15T03:00:00Z");
@@ -104,6 +106,8 @@ beforeAll(async () => {
   // Chữ ký của u2 (người được giao c4, KHÔNG phải người tạo): ký c4 (có quyền) và c1 (u2 không có quyền mở).
   await signed(c4, u2, sigU2, "u2-giao", "2026-11-01T03:00:00Z");
   await signed(c1, u2, sigU2, "u2-an", "2026-11-02T03:00:00Z");
+  // 31/10 18:00 UTC = 01/11 01:00 giờ VN ⇒ lọc ngày theo múi giờ công ty.
+  await signed(c1, u1, sigTz, "mui-gio", "2026-10-31T18:00:00Z");
   db = createDb(urls().hubApi, { max: 2 });
 }, 60_000);
 afterAll(async () => {
@@ -121,8 +125,11 @@ describe("CR-188 BR-188-4/5 · giấy tờ đã ký bằng chữ ký này", () =
     ]);
     expect(rows.every((r) => r.title !== "" && r.file_name.endsWith(".pdf"))).toBe(true);
   });
-  it("người KHÁC (không phải quản trị) hỏi chữ ký của u1 ⇒ 403", async () => {
-    await expect(list(u2, false, sigU1)).rejects.toMatchObject({ code: "FORBIDDEN", status: 403 });
+  it("người KHÁC (không phải quản trị) hỏi chữ ký của u1 hay chữ ký chưa ai dùng thì nhận kết quả GIỐNG HỆT, rỗng", async () => {
+    const foreign = await list(u2, false, sigU1);
+    const unused = await list(u2, false, sigNone);
+    expect(foreign).toEqual([]);
+    expect(foreign).toEqual(unused);
   });
   it("quản trị xem được chữ ký của người khác", async () => {
     const rows = await list(u2, true, sigU1);
@@ -144,6 +151,10 @@ describe("CR-188 BR-188-4/5 · giấy tờ đã ký bằng chữ ký này", () =
   it("lọc theo khoảng ngày (gồm cả ngày cuối)", async () => {
     const rows = await list(u1, false, sigU1, { from: "2026-10-12", to: "2026-10-20" });
     expect(rows.map((r) => r.contract_id)).toEqual([c3]);
+  });
+  it("lọc ngày theo múi giờ công ty (giờ VN), không theo UTC", async () => {
+    expect(await list(u1, false, sigTz, { to: "2026-10-31" })).toEqual([]);
+    expect((await list(u1, false, sigTz, { from: "2026-11-01", to: "2026-11-01" })).length).toBe(1);
   });
   it("chữ ký chưa ký gì ⇒ danh sách rỗng, không lỗi", async () => {
     expect(await list(u1, false, sigNone)).toEqual([]);
