@@ -351,6 +351,13 @@ describe("bài: tạo / bảng tin / sửa / thao tác / nguồn", () => {
   });
 });
 
+describe("CR-191 bảng tin gộp", () => {
+  it("authorOrgId không phải uuid ⇒ 200 (bỏ phần bài công ty kết nối, không 500)", async () => {
+    const r = await ok(FeedResponseSchema, call("hA", "GET", "/feed?authorOrgId=abc"));
+    expect(r.items).toEqual([]);
+  });
+});
+
 describe("bình luận phẳng theo bạn bè (CR-129)", () => {
   it("POST /comments + GET /comments: không còn luồng; đối tác thấy của mình + chủ quản, không thấy đối tác khác", async () => {
     const t1 = await ok(
