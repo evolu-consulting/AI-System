@@ -1,13 +1,10 @@
 // CR-102 · C12b · 3 vai trên stack thật + seed demo (docs/current/community/hien-thi.md): ai thấy bài nào, che liên hệ,
 // bình luận phẳng (CR-129), dấu "chỉ chủ quản". Dữ liệu = `seed-community-demo` (bài Thùng phi 200L, CKS, Băng keo…).
 import { expect, type Page, test } from "@playwright/test";
+import { openComposer as openComposerDlg } from "./_composer";
 import { MASK_PHONE, ORG, openAs, postByTitle, READONLY } from "./_stack";
 
-const openComposer = (page: Page) =>
-  page
-    .getByTestId("composer")
-    .getByRole("button", { name: /đang có hàng/ })
-    .click();
+const openComposer = (page: Page) => openComposerDlg(page);
 
 test.describe("community-web · 3 vai (stack thật)", () => {
   test("chủ quản: thấy mọi bài, số điện thoại NCC bị tô (raw), bình luận phẳng, đánh dấu bài đối tác", async ({

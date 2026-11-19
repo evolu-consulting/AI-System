@@ -8,6 +8,7 @@
 //  M4 · /community/me: 2 tab; tab «Bài đăng của tổ chức» có bài của đồng nghiệp, tab «Bài đăng của tôi» không có.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, createPost, pageFetch, tenantIdByKey } from "../_kit/api";
+import { openComposer } from "./_composer";
 import { NEW_PW, ORG, openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
 /* biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo) */
@@ -107,15 +108,12 @@ test("CR129-M3 · Composer: chọn nhóm hàng qua hộp thoại (cat-pick-btn �
   const host = await openAs(browser, "host");
   const p = host.page;
   await p.goto("/community");
-  await p
-    .getByTestId("composer")
-    .getByRole("button", { name: /đang có hàng/ })
-    .click();
-  const attach = p.getByTestId("composer").getByRole("button", { name: "Đính kèm" });
+  const dlgC = await openComposer(p);
+  const attach = dlgC.getByRole("button", { name: "Đính kèm" });
   await expect(attach).toBeVisible();
   await expect(attach).toHaveText(""); // chỉ biểu tượng, nhãn nằm ở aria-label
-  await p.getByRole("button", { name: "Chọn người xem" }).click();
-  await p.getByRole("button", { name: "Theo nhóm hàng" }).click();
+  await p.getByRole("combobox", { name: "Ai thấy bài" }).click();
+  await p.getByRole("option", { name: "Theo nhóm hàng" }).click();
   await p.getByTestId("cat-pick-btn").click();
   const dlg = p.getByRole("dialog", { name: "Chọn nhóm hàng" });
   await expect(dlg).toBeVisible();
@@ -182,8 +180,8 @@ test("CR129-M4 · /community/me có 2 tab; «Bài đăng của tổ chức» có
     await page.locator("button[type=submit]").first().click();
   }
   await expect(composer).toBeVisible({ timeout: 45_000 });
-  await composer.getByRole("button", { name: "Cần bán", exact: true }).click();
-  await page.getByLabel("Hàng hoá", { exact: true }).fill(COLLEAGUE_POST);
+  await openComposer(page, "Cần bán");
+  await page.getByTestId("goods-input").fill(COLLEAGUE_POST);
   await page.getByLabel("Số lượng").fill("5 thùng");
   await page.getByRole("button", { name: "Đăng bài" }).click();
   await expect(postByTitle(page, COLLEAGUE_POST).first()).toBeVisible();

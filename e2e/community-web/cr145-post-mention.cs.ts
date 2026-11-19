@@ -4,6 +4,7 @@
 //  P2 · Người được nhắc (Tân Phát, KHÁC người đăng) thấy chuông «nhắc bạn trong một bài», bấm ⇒ mở đúng bài.
 //  P3 · Người đăng KHÔNG nhận chuông về chính bài mình; ô «Nhắc tên» của đối tác chỉ gợi ý đồng nghiệp công ty mình (không có chủ quản).
 import { expect, test } from "@playwright/test";
+import { openComposer, openMentionFromBody } from "./_composer";
 import { ORG, openAs, postByTitle } from "./_stack";
 
 const RUN = Date.now().toString(36);
@@ -17,21 +18,14 @@ test("CR145-P1 · chủ quản: ô soạn mặc định «Thông báo»; nhắc 
   const host = await openAs(browser, "host");
   const p = host.page;
   await p.goto("/community");
-  await p.locator(".ctype.note").click(); // ô soạn thu gọn: bấm nút loại «Thông báo» ⇒ mở ô soạn
-  // ô soạn đã mở: nút loại nằm trong .seg, loại đang chọn có class «on» (không còn .ctype / aria-pressed)
-  await expect(p.getByTestId("composer").locator('.seg button[data-type="note"]')).toHaveClass(
-    "on",
-  );
-  await p
-    .getByRole("textbox", { name: /nội dung|Nội dung/ })
-    .first()
-    .fill(TITLE);
-  await p.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click(); // CR-147c: hộp chọn người
+  const dlg = await openComposer(p); // CR-191: «Viết bài…» ⇒ hộp thoại; loại mặc định «Thông báo» (nút có class «on»)
+  await expect(dlg.locator('.seg button[data-type="note"]')).toHaveClass("on");
+  await openMentionFromBody(p, dlg, TITLE); // gõ «@» trong thân bài ⇒ hộp «Nhắc tên» (không còn nút riêng)
   await p.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Tân Phát");
   await p.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first().click();
   await p.getByTestId("mention-done").click();
   await expect(p.getByTestId("mention-chip")).toHaveCount(1);
-  await p.getByRole("button", { name: /^Đăng/ }).click();
+  await dlg.getByRole("button", { name: "Đăng bài" }).click();
   await expect(postByTitle(p, TITLE).getByTestId("post-mentions")).toContainText("Nhắc:");
   // người đăng không nhận chuông về chính bài mình
   await p.getByTestId("topbar-bell").getByRole("button").first().click();
@@ -61,8 +55,8 @@ test("CR145-P3 · đối tác: ô «Nhắc tên» chỉ gợi ý đồng nghiệ
   const sup = await openAs(browser, "supplier");
   const p = sup.page;
   await p.goto("/community");
-  await p.locator(".ctype.sell").click();
-  await p.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click();
+  const dlg = await openComposer(p, "Cần bán");
+  await openMentionFromBody(p, dlg);
   const options = p.getByTestId("mention-option");
   const n = await options.count();
   for (let i = 0; i < n; i++) await expect(options.nth(i)).not.toContainText(ORG.buyer);

@@ -41,15 +41,15 @@ const open = async (browser: Browser, e: Env, user: string) => {
   await loginCw(page, e, user);
   return { ctx, page };
 };
-/** CR-178 · tab «Đối tác ▾» ⇒ chọn công ty trong menu (thay hàng chip công ty). */
+/** CR-190 · công ty đối tác = nhóm «dir-group» ở cột trái (thay tab «Đối tác ▾»): mở nhóm nếu đang thu. */
 const pickPartner = async (page: Page, name: string) => {
-  await page.getByTestId("tab-partner").click();
-  await page
-    .getByTestId("partner-item")
+  const head = page
+    .getByTestId("dir-group-head")
     .filter({ hasText: new RegExp(name) })
-    .first()
-    .click();
-  await expect(page.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
+    .first();
+  await expect(head).toBeVisible();
+  if ((await head.getAttribute("aria-expanded")) !== "true") await head.click();
+  await expect(head).toHaveAttribute("aria-expanded", "true");
 };
 const searchBox = (page: Page) => page.getByRole("searchbox", { name: "Tìm người, nhóm, công ty" });
 const msgBadge = (page: Page) =>
@@ -107,7 +107,7 @@ test("CR169-J1 · Vy (nhân viên, không phải người mời) › Tin nhắn 
   await pickPartner(page, CO.b.name);
   await searchBox(page).fill("Hà Mai");
   await page.getByTestId("find-tab-people").click(); // CR-178 M3: tìm ≥ 2 ký tự mở tab «Tin nhắn» trước; người nằm ở tab «Người»
-  const row = page.getByTestId("people-results").getByTestId("person-row").first();
+  const row = rowOf(page, NAME.ha).first();
   await expect(row).toContainText(NAME.ha);
   await expect(row).toContainText(CO.b.name);
   await expect(row).not.toContainText("@"); // không lộ email / điện thoại
@@ -145,7 +145,7 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   await expect(msgBadge(h.page)).toHaveText("1");
   const row = rowOf(h.page, VY);
   await expect(row).toHaveAttribute("data-unread", "true");
-  await expect(row.getByTestId("conv-company")).toContainText(CO.a.name);
+  await expect(row.getByTestId("conv-company-line")).toContainText(CO.a.name);
   await h.page.getByTestId("tab-unread").click(); // CR-178: Hà (người nhận, không phải người tạo cuộc) thấy cuộc ở «Chưa đọc»
   await expect(row).toBeVisible();
   await row.click();
@@ -265,8 +265,7 @@ test("CR169-J6 · N2 cách ly: Lan (cùng công ty, ngoài cuộc) không thấy
   expect(peek.status).toBe(404); // người ngoài cuộc: «không tìm thấy»
   const { ctx, page } = await open(browser, EA, WHO.lan);
   await page.goto("/contracts/messages");
-  await pickPartner(page, CO.b.name);
-  await expect(page.getByTestId("conv-empty")).toBeVisible();
+  await expect(page.getByTestId("dir-list").or(page.getByTestId("conv-empty"))).toBeVisible();
   await expect(rowOf(page, NAME.ha)).toHaveCount(0);
   await ctx.close();
 
@@ -360,11 +359,10 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
 
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages?company=all");
-  await v.page.getByTestId("tab-partner").click(); // hết kết nối ⇒ hết công ty trong menu «Đối tác»
+  await expect(v.page.getByTestId("dir-list")).toBeVisible(); // hết kết nối ⇒ hết nhóm công ty ở cột trái
   await expect(
-    v.page.getByTestId("partner-item").filter({ hasText: new RegExp(CO.b.name) }),
+    v.page.getByTestId("dir-group-head").filter({ hasText: new RegExp(CO.b.name) }),
   ).toHaveCount(0);
-  await v.page.keyboard.press("Escape");
   await rowOf(v.page, NAME.ha).click(); // cuộc cũ vẫn nằm ở «Tất cả»
   await expect(msgOf(v.page, HELLO)).toBeVisible();
   await expect(msgOf(v.page, REPLY)).toBeVisible();

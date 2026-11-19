@@ -41,11 +41,9 @@ const bell = async (page: Page, text: string) => {
 };
 const partnerUrl = (tenantId: string, other: "a" | "b") =>
   `/contracts/partners?party=${encodeURIComponent(`tax:${CO[other].tax}`)}&tenant=${tenantId}&tab=chat`; // đường dẫn cũ: CR-169 đổi về Tổng quan
-/** CR-178 · công ty đối tác trong menu «Đối tác ▾» của Tin nhắn (khớp một phần tên: tên công ty hoặc tên pháp lý). */
-const partnerItem = async (page: Page, name: string) => {
-  await page.getByTestId("tab-partner").click();
-  return page.getByTestId("partner-item").filter({ hasText: new RegExp(name) });
-};
+/** CR-190 · công ty đối tác = một nhóm «dir-group» ở cột trái Tin nhắn (thay menu «Đối tác ▾»); trả về đầu nhóm (khớp một phần tên). */
+const partnerItem = (page: Page, name: string) =>
+  page.getByTestId("dir-group-head").filter({ hasText: new RegExp(name) });
 const tabOf = (page: Page, name: string) => page.getByRole("tab", { name, exact: true });
 let tenantB = "";
 
@@ -103,8 +101,8 @@ test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», bấm «Nhắn ti
   await expect(list).toContainText("Đã kết nối");
   await list.getByRole("link", { name: "Nhắn tin", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/contracts/messages?.*company=${tenantB}`));
-  await expect(page.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByTestId("tab-partner")).toContainText(CO.b.name);
+  // CR-190: vào bằng ?company=<id> ⇒ nhóm công ty đó tự mở
+  await expect(partnerItem(page, CO.b.name)).toHaveAttribute("aria-expanded", "true");
   await ctx.close();
 });
 

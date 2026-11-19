@@ -17,7 +17,7 @@ process.env.CR169_RUN ||= Date.now().toString(36);
 export default defineConfig({
   ...base,
   testDir: "..",
-  testMatch: ["**/cr169/*.spec.ts"],
+  testMatch: ["**/cr169/*.spec.ts", "**/cr187/*.spec.ts"], // CR-187: Tin nhắn toàn màn dùng đúng stack cr169
   testIgnore: [],
   preserveOutput: "always",
   outputDir: "../../test-results/cr169",

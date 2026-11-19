@@ -2,14 +2,7 @@
 // hộp «Nhắc tên»: lọc nhóm + tìm tên, dòng ≥ 44px; 3 bình luận mới nhất. Adapter mock (persona mặc định = chủ quản).
 import { expect, type Page, test } from "@playwright/test";
 import { MOBILE_USE } from "../_kit/mobile-rules";
-
-const scrollFeed = (page: Page, y: number) =>
-  page.evaluate((top) => {
-    // vùng cuộn chính của shell = tổ tiên có overflow-y auto gần bảng tin nhất
-    let el: HTMLElement | null = document.querySelector(".feedwrap");
-    while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
-    (el ?? document.scrollingElement)?.scrollTo({ top });
-  }, y);
+import { openComposer, openMentionFromBody } from "./_composer";
 
 const openComposerPref = (page: Page) =>
   page.addInitScript(() => {
@@ -24,12 +17,11 @@ const openComposerPref = (page: Page) =>
 test.describe("CR-186 · điện thoại 390px", () => {
   test.use(MOBILE_USE);
 
-  test("ô đăng mở: loại bài là một hàng nút ≥ 44px, không tràn ngang", async ({ page }) => {
+  test("hộp «Viết bài…»: loại bài là một hàng nút ≥ 44px, không tràn ngang", async ({ page }) => {
     await openComposerPref(page);
     await page.goto("/community");
-    const composer = page.getByTestId("composer");
-    await composer.getByRole("button", { name: /đang có hàng cần bán/ }).click();
-    const seg = composer.getByRole("group", { name: "Loại bài" });
+    const dlg = await openComposer(page);
+    const seg = dlg.getByRole("group", { name: "Loại bài" });
     await expect(seg).toBeVisible();
     const buttons = seg.getByRole("button");
     await expect(buttons).toHaveCount(3); // chủ quản: Cần bán · Cần mua · Thông báo
@@ -45,35 +37,14 @@ test.describe("CR-186 · điện thoại 390px", () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(over).toBeLessThanOrEqual(0);
-    const box = await composer.boundingBox();
+    const box = await dlg.boundingBox();
     expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
-  });
-
-  test("cuộn xuống: ô đăng dính dưới thanh trên, thu thành «Viết bài…», bấm ⇒ mở đầy đủ", async ({
-    page,
-  }) => {
-    await openComposerPref(page);
-    await page.goto("/community");
-    await expect(page.getByTestId("post").first()).toBeVisible();
-    await scrollFeed(page, 600);
-    const compact = page.getByTestId("composer");
-    await expect(compact).toHaveAttribute("data-compact", "true");
-    await expect(compact.getByRole("button", { name: "Viết bài…" })).toBeVisible();
-    const top = (await compact.boundingBox())?.y ?? 999;
-    expect(top).toBeLessThan(140); // dính ngay dưới thanh đầu trang
-    await compact.getByRole("button", { name: "Viết bài…" }).click();
-    await expect(page.getByRole("textbox", { name: "Nội dung bài đăng" })).toBeVisible();
-    await expect(page.getByTestId("composer")).not.toHaveAttribute("data-compact", "true");
   });
 
   test("hộp Nhắc tên: dòng cao ≥ 44px, bộ lọc nhóm không tràn", async ({ page }) => {
     await openComposerPref(page);
     await page.goto("/community");
-    await page
-      .getByTestId("composer")
-      .getByRole("button", { name: "Cần bán", exact: true })
-      .click();
-    await page.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click();
+    await openMentionFromBody(page, await openComposer(page, "Cần bán"));
     const dlg = page.getByTestId("mention-dialog");
     const rows = dlg.getByTestId("mention-option");
     await expect(rows.first()).toBeVisible();
@@ -88,11 +59,7 @@ test.describe("CR-186 · điện thoại 390px", () => {
 test.describe("CR-186 · máy tính", () => {
   test("Nhắc tên: lọc nhóm Tất cả · Nội bộ · Đối tác · Khách hàng + tìm tên", async ({ page }) => {
     await page.goto("/community");
-    await page
-      .getByTestId("composer")
-      .getByRole("button", { name: "Cần bán", exact: true })
-      .click();
-    await page.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click();
+    await openMentionFromBody(page, await openComposer(page, "Cần bán"));
     const dlg = page.getByTestId("mention-dialog");
     const rows = dlg.getByTestId("mention-option");
     await expect(rows).toHaveCount(4); // Tất cả

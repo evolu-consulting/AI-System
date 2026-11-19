@@ -17,6 +17,7 @@ export default defineConfig({
     "**/cr127/j*.spec.ts",
     "**/journey-approval/cr150-two-companies.spec.ts",
     "**/cr179/*.spec.ts", // CR-179: khung tệp/ảnh trong Tin nhắn
+    "**/cr190/*.spec.ts", // CR-190: cột trái + khung chat của Tin nhắn (cùng stack, KHÔNG thêm stack mới)
   ],
   testIgnore: [],
   preserveOutput: "always",

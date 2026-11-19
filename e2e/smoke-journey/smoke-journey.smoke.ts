@@ -501,17 +501,18 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         await a.goto(`${E.cw}/contracts/messages`);
         // Chờ chip bật + kết quả đúng người B rồi mới bấm: bấm ngay dòng đầu từng chọn nhầm đồng nghiệp A (danh sách «công ty mình» chưa đổi)
         // ⇒ tin đi vào cuộc NỘI BỘ A, B không bao giờ thấy (bản test 20261115: hub.pmsg_threads 0 dòng, msg_conversations A có cuộc nv↔gd).
-        await a.getByTestId("tab-partner").click({ timeout: 60_000 });
-        await a
-          .getByTestId("partner-item")
+        // CR-190: công ty đối tác là một nhóm ở cột trái; mở nhóm «Smoke B» (nếu đang thu) rồi tìm người
+        const headB = a
+          .getByTestId("dir-group-head")
           .filter({ hasText: /Smoke B/ })
-          .first()
-          .click();
-        await expect(a.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
+          .first();
+        await expect(headB).toBeVisible({ timeout: 60_000 });
+        if ((await headB.getAttribute("aria-expanded")) !== "true") await headB.click();
         await a
           .getByRole("searchbox", { name: "Tìm người, nhóm, công ty" })
           .fill("Nhân viên Smoke B");
-        const person = a.getByTestId("people-results").getByTestId("person-row").first();
+        await a.getByTestId("find-tab-people").click();
+        const person = a.getByTestId("conv-row").filter({ hasText: "Nhân viên Smoke B" }).first();
         await expect(person).toContainText("Nhân viên Smoke B", { timeout: 30_000 });
         await person.click();
         await expect(a.getByTestId("chat-company")).toContainText("Smoke B");

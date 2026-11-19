@@ -3,6 +3,8 @@
 import { expect, test } from "@playwright/test";
 import { pickOption } from "../_kit/ui";
 
+import { openComposer } from "./_composer";
+
 const as = async (page: import("@playwright/test").Page, id: string) => {
   await pickOption(page.getByLabel("Chọn nhân vật"), id);
 };
@@ -13,9 +15,9 @@ test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có 
   await expect(page.getByTestId("shell-brand")).toBeVisible();
   await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
   // composer thu gọn: nút loại bài "Cần bán" (aria-label) + ô gợi ý có chữ "cần bán" trong tên ⇒ chọn đúng tên (exact)
-  await page.getByTestId("composer").getByRole("button", { name: "Cần bán", exact: true }).click();
+  await openComposer(page, "Cần bán");
   await expect(page.locator("#draft-body")).toBeVisible();
-  await page.getByLabel("Hàng hoá", { exact: true }).fill("Keo dán thử");
+  await page.getByTestId("goods-input").fill("Keo dán thử");
   await page.getByLabel("Số lượng").fill("10 thùng");
   await page.getByRole("button", { name: "Đăng bài" }).click();
   const posted = page.getByTestId("post").filter({ hasText: "Keo dán thử" }).first();
@@ -44,10 +46,7 @@ test("đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá
 }) => {
   await page.goto("/community");
   await as(page, "tp");
-  await page
-    .getByTestId("composer")
-    .getByRole("button", { name: /đang có hàng/ })
-    .click();
+  await openComposer(page);
   const mine = page.locator('[data-post-id="p5"]');
   await expect(mine).toContainText("[SỐ ĐIỆN THOẠI]");
   await expect(mine).not.toContainText("0903");
@@ -65,14 +64,13 @@ test("chủ quản: bình luận phẳng (không tab công ty) + audience previe
   page,
 }) => {
   await page.goto("/community");
-  await page
-    .getByTestId("composer")
-    .getByRole("button", { name: /đang có hàng/ })
-    .click();
+  await openComposer(page);
   await expect(page.locator("#draft-body")).toBeVisible();
-  await page.getByRole("button", { name: "Chọn người xem" }).click();
-  await page.getByRole("button", { name: "Chỉ nhà cung cấp" }).click();
-  await expect(page.getByTestId("audience-preview")).toContainText("Sẽ hiện với 3 công ty");
+  await page.getByRole("combobox", { name: "Ai thấy bài" }).click();
+  await page.getByRole("option", { name: "Nhà cung cấp", exact: true }).click();
+  await expect(page.getByTestId("audience-preview")).toHaveText(
+    /^3\/\d+ công ty đối tác thấy bài$/,
+  );
   const post = page.locator('[data-post-id="p1"]');
   await expect(post.getByTestId("thread")).toBeVisible(); // p1 có bình luận ⇒ mở sẵn (CR-186)
   await expect(post.getByRole("tab")).toHaveCount(0); // CR-129: không còn luồng riêng theo công ty

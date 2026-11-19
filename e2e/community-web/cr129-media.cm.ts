@@ -3,6 +3,8 @@
 // Lúc soạn: ảnh thu nhỏ, nút ✕ bỏ.
 import { expect, test } from "@playwright/test";
 
+import { openComposer } from "./_composer";
+
 const png = (n: number) => ({
   name: `anh-${n}.png`,
   mimeType: "image/png",
@@ -15,13 +17,12 @@ const png = (n: number) => ({
 
 async function postImages(page: import("@playwright/test").Page, n: number, product: string) {
   await page.goto("/community");
-  const composer = page.getByTestId("composer");
-  await composer.getByRole("button", { name: "Cần bán", exact: true }).click();
+  const composer = await openComposer(page, "Cần bán");
   await page
     .getByTestId("attach-input")
     .setInputFiles(Array.from({ length: n }, (_, i) => png(i + 1)));
   await expect(composer.getByTestId("draft-image")).toHaveCount(n);
-  await page.getByLabel("Hàng hoá", { exact: true }).fill(product);
+  await page.getByTestId("goods-input").fill(product);
   await page.getByLabel("Số lượng").fill("4 thùng");
   await page.getByRole("button", { name: "Đăng bài" }).click();
   return page.getByTestId("post").filter({ hasText: product }).first();
@@ -60,8 +61,7 @@ test("bài 5 ảnh: 4 ô và «+1», bấm mở phóng to, qua lại, Esc đóng
 
 test("lúc soạn: bấm ✕ bỏ một ảnh thu nhỏ", async ({ page }) => {
   await page.goto("/community");
-  const composer = page.getByTestId("composer");
-  await composer.getByRole("button", { name: "Cần bán", exact: true }).click();
+  const composer = await openComposer(page, "Cần bán");
   await page.getByTestId("attach-input").setInputFiles([png(1), png(2)]);
   await expect(composer.getByTestId("draft-image")).toHaveCount(2);
   await composer.getByTestId("draft-remove").first().click();

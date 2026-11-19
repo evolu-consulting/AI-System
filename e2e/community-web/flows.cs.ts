@@ -7,6 +7,7 @@ import { expect, test } from "@playwright/test";
 import { apiLogin, approvePost, createPost, pageFetch } from "../_kit/api";
 import { enableFlowTriggers } from "../_kit/flows";
 import { flowRows, loginPlatformAdminUi, openCompanyFlows, openTenantAppsTab } from "../_kit/ui";
+import { openComposer } from "./_composer";
 import { ensureModerationFlow } from "./_flow";
 import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
@@ -44,15 +45,8 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
   test.setTimeout(420_000);
   const sup = await openAs(browser, "supplier");
   await sup.page.goto("/community");
-  await sup.page
-    .getByTestId("composer")
-    .getByRole("button", { name: /đang có hàng/ })
-    .click();
-  await sup.page
-    .getByTestId("composer")
-    .getByRole("button", { name: "Cần bán", exact: true })
-    .click();
-  await sup.page.getByLabel("Hàng hoá", { exact: true }).fill(TITLE);
+  await openComposer(sup.page, "Cần bán");
+  await sup.page.getByTestId("goods-input").fill(TITLE);
   await sup.page.getByLabel("Số lượng").fill("3 thùng");
   await sup.page.getByRole("button", { name: "Đăng bài" }).click();
 
