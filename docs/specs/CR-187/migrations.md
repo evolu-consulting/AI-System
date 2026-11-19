@@ -15,10 +15,10 @@
 | pack-contracts | 0129 | cr191-partner-connect | 1807000900000 | đã gộp |
 | pack-community | 0025 | cr191-audience-schema | 1807000640000 | đã gộp |
 | pack-community | 0026 | cr191-feed-merge-rls | 1807000660000 | đã gộp |
-| pack-community | 0027 | cr191-composer-audience | 1807000680000 | đang làm |
-| pack-community | 0028 | cr191-cross-comment | 1807000700000 | giao |
+| pack-community | 0027 | cr191-composer-audience | 1807000680000 | đã gộp |
+| pack-community | 0030 | cr191-cross-comment | 1807000740000 | giao |
 
-| hub | 0172 | cr189-admin-org-api | 1806904700000 | đang soát |
-| pack-community | 0029 | cr191-composer-audience (lọc chuông, nếu cần) | 1807000720000 | giao |
+| hub | 0172 | cr189-admin-org-api | 1806904700000 | đã gộp |
+| pack-community | 0029 | cr191-composer-audience | 1807000720000 | đã gộp |
 
-Số kế tiếp còn trống: hub 0173 (`when` > 1806904700000), pack-contracts 0130 (> 1807000900000), pack-community 0030 (> 1807000720000). Không dùng 0162/0164/0165/0169 hub, 0127 pack-contracts.
+Số kế tiếp còn trống: hub 0173 (`when` > 1806904700000), pack-contracts 0130 (> 1807000900000), pack-community 0031 (> 1807000740000; 0028 bỏ trống). Không dùng 0162/0164/0165/0169 hub, 0127 pack-contracts.
