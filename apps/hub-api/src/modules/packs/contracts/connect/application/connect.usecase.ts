@@ -10,9 +10,9 @@ import type {
   ConnectSettings,
   ConnectStatus,
 } from "@ai/contracts/pack-contracts";
-import { AppError } from "../../../../../lib/errors";
 import type { PackStreamFrame, PackStreamPublishMany, PackUow, PackWho } from "../../../kit/public";
 import { type Cursor, encodeCursor } from "../domain/connect.codec";
+import { ConnectInviteForbiddenError } from "../domain/connect.errors";
 import type { CcOwner, ConnectRepo } from "./connect.ports";
 
 export type ConnectRepos = { connect: ConnectRepo };
@@ -70,8 +70,7 @@ export function connectUsecases(d: ConnectDeps) {
       const name = await d.selfName(who);
       const out = await d.uow.tenant(who, async (r) => {
         // BR-191-11: theo cài đặt công ty (DB kiểm lại ở `cc_invite`); báo 403 + lý do thay vì 404.
-        if (!(await r.connect.canInvite(who.userId)))
-          throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản trị công ty được mời đối tác mới.");
+        if (!(await r.connect.canInvite(who.userId))) throw new ConnectInviteForbiddenError();
         const status = await r.connect.invite(to, note, who.userId, name);
         const owners =
           status === "pending_out" || status === "connected"

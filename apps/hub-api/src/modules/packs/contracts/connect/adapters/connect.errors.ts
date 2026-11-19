@@ -2,6 +2,7 @@
 // 42501 = không có quyền/không thấy ⇒ 404 (không lộ công ty có tồn tại), 22023 = đầu vào sai ⇒ 400. Lỗi lạ ném lại (500).
 import { CC_ERRORS, type CcErrorCode } from "@ai/contracts/pack-contracts";
 import { AppError, appError } from "../../../../../lib/errors";
+import { ConnectInviteForbiddenError } from "../domain/connect.errors";
 
 type PgErr = { code?: string; message?: string; cause?: PgErr };
 const root = (e: unknown): PgErr => {
@@ -22,6 +23,8 @@ const isCode = (m: string | undefined): m is CcErrorCode =>
 /** `notFound`: mã (vẫn HTTP 404) thay cho `NOT_FOUND` chung khi 42501 — bài ⇒ `CONNECT_NOT_CONNECTED` theo spec §3. */
 export function ccError(e: unknown, notFound?: CcErrorCode): never {
   if (e instanceof AppError) throw e;
+  if (e instanceof ConnectInviteForbiddenError)
+    throw new AppError("PACK_FORBIDDEN", 403, e.message);
   const { code, message } = root(e);
   if ((code === "CC422" || code === "CC409" || code === "CC404") && isCode(message))
     throw new AppError(message, CC_ERRORS[message], MESSAGES[message]);
