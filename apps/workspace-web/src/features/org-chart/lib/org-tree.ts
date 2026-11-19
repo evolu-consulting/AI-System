@@ -46,6 +46,13 @@ export function filterOrg(roots: readonly OrgNode[], query: string): OrgNode[] {
   return roots.flatMap((r) => walk(r) ?? []);
 }
 
+/** BR-189-2 · «N người» trực tiếp: thành viên ∪ trưởng phòng của riêng phòng (không đếm phòng con). */
+export function directCount(n: OrgNode): number {
+  const ids = new Set<string>(n.members.map((m) => m.id));
+  if (n.head) ids.add(n.head.id);
+  return ids.size;
+}
+
 /** Số người khác nhau trong cả nhánh (đếm một lần dù thuộc nhiều phòng). */
 export function headcount(n: OrgNode): number {
   const ids = new Set<string>();

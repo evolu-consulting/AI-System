@@ -30,6 +30,7 @@ export function OrgPreview({ depts, selectedId, onSelect }: Props) {
     () => ({
       noHead: t("orgEdit.noHead"),
       people: (count: number) => t("orgEdit.people", { count }),
+      peopleTotal: (count: number) => t("orgEdit.peopleTotal", { count }),
       canvas: t("orgEdit.chart"),
       controls: {
         title: t("orgEdit.controls"),

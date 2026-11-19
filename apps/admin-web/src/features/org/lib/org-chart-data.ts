@@ -5,7 +5,10 @@ import type { OrgChartDept, OrgChartPerson } from "@ai/flow-canvas/pure";
 export function toChartDepts(org: OrgResponse | undefined): OrgChartDept[] {
   if (!org) return [];
   const who = new Map<string, OrgChartPerson>(
-    org.members.map((m) => [m.user_id, { id: m.user_id, name: m.display_name }]),
+    org.members.map((m) => [
+      m.user_id,
+      { id: m.user_id, name: m.display_name, jobTitle: m.job_title ?? null },
+    ]),
   );
   const person = (id: string): OrgChartPerson | null => who.get(id) ?? null;
   return org.departments.map((d) => ({

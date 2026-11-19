@@ -30,8 +30,8 @@ type Dept = {
   id: string;
   name: string;
   parent_id: string | null;
-  head: { id: string; name: string } | null;
-  members: { id: string; name: string }[];
+  head: { id: string; name: string; job_title: string | null } | null;
+  members: { id: string; name: string; job_title: string | null }[];
 };
 
 let sql: Sql;
@@ -66,6 +66,8 @@ beforeAll(async () => {
   await sql`insert into admin.group_members (tenant_id, group_id, user_id) values
     (${T.acme}, ${G_ROOT}, ${USERS.tadmin.id}), (${T.acme}, ${G_KD}, ${USERS.lan.id}), (${T.acme}, ${G_KD}, ${USERS.hoa.id}),
     (${T.acme}, ${G_KD}, ${USERS.khoa.id}), (${T.beta}, ${G_BETA}, ${USERS.an.id})`;
+  // CR-189 · chức vụ (hồ sơ người). Người ngoài không thể vào nhóm (trigger DB chặn) nên không bao giờ có trong sơ đồ.
+  await sql`insert into hub.people_profiles (tenant_id, user_id, job_title) values (${T.acme}, ${USERS.lan.id}, 'Trưởng phòng KD'), (${T.acme}, ${USERS.hoa.id}, 'Nhân viên KD')`;
   // `lan`/`an` đọc được gói qua grant của nhóm mình (nhóm cấp read).
   for (const [t, gid] of [
     [T.acme, G_KD],
@@ -94,6 +96,23 @@ describe("CR-139 · GET /pack/contracts/org", () => {
     // thành viên bị tenant khoá (`khoa`) không hiện
     expect(kd?.members.map((m) => m.id).sort()).toEqual([USERS.lan.id, USERS.hoa.id].sort());
     expect(depts.find((d) => d.id === G_ROOT)?.parent_id).toBeNull();
+  });
+
+  it("CR-189 · thẻ phòng: đủ dữ liệu đếm (trưởng phòng ∪ thành viên), chức vụ, người ngoài không lộ", async () => {
+    const res = await call(hub, "GET", "/pack/contracts/org", { token: await sign(k, USERS.hoa) });
+    const depts = (res.json as { departments: Dept[] }).departments;
+    const kd = depts.find((d) => d.id === G_KD);
+    expect(kd?.head?.job_title).toBe("Trưởng phòng KD");
+    expect(kd?.members.find((m) => m.id === USERS.hoa.id)?.job_title).toBe("Nhân viên KD");
+    // người chưa có hồ sơ ⇒ job_title null (không lỗi)
+    expect(depts.find((d) => d.id === G_ROOT)?.head?.job_title).toBeNull();
+    // trực tiếp = hợp(trưởng phòng, thành viên): KD = lan + hoa = 2; đối tác không lộ
+    const direct = new Set([
+      ...(kd?.members ?? []).map((m) => m.id),
+      ...(kd?.head ? [kd.head.id] : []),
+    ]);
+    expect(direct.size).toBe(2);
+    expect(JSON.stringify(res.json)).not.toContain(EXT_ID);
   });
 
   it("user ngoài (đối tác) ⇒ 403; công ty khác không lộ sang nhau", async () => {

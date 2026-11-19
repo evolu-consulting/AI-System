@@ -691,6 +691,7 @@
     "preview": "Click a department on the chart to edit it below.",
     "people_one": "{count} person",
     "people_other": "{count} people",
+    "peopleTotal": "· total {count}",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "fit": "Fit to view",

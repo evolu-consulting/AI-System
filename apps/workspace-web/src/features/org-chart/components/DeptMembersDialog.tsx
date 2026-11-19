@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { headcount, type OrgNode } from "../lib/org-tree";
+import { directCount, headcount, type OrgNode } from "../lib/org-tree";
 
 export function DeptMembersDialog({
   dept,
@@ -25,7 +25,14 @@ export function DeptMembersDialog({
         <DialogHeader>
           <DialogTitle>{dept?.name}</DialogTitle>
           <DialogDescription>
-            {dept ? t("contracts.orgChart.people", { count: headcount(dept) }) : null}
+            {dept ? (
+              <>
+                {t("contracts.orgChart.people", { count: directCount(dept) })}
+                {dept.children.length > 0
+                  ? ` ${t("contracts.orgChart.peopleTotal", { count: headcount(dept) })}`
+                  : ""}
+              </>
+            ) : null}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>

@@ -36,4 +36,4 @@ Nhãn trạng thái 5 màu cố định, luôn có icon; avatar người tròn, 
 - Kịch bản: khi danh sách có 9 người thì cuộn, 8 người thì không [test: apps/workspace-web/src/shared/ui/person-avatar.test.tsx » danh sách: họ tên + chức vụ, tới 8 không cuộn, trên 8 cuộn]
 
 ## Việc còn lại
-- Gắn vào thẻ phòng (lát cr189-org-card), bỏ `fixme` e2e.
+- (đã gắn ở lát cr189-org-chart-cards; e2e bỏ fixme)

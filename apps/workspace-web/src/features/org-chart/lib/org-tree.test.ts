@@ -1,7 +1,7 @@
 // CR-139 · Q13 · dựng cây + tìm trong sơ đồ tổ chức.
 import { describe, expect, test } from "bun:test";
 import type { ContractsOrgDept } from "@ai/contracts/pack-contracts";
-import { buildOrgTree, filterOrg, headcount } from "./org-tree";
+import { buildOrgTree, directCount, filterOrg, headcount } from "./org-tree";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const p = (n: number) => ({ id: id(n), name: `Người ${n}` });
@@ -42,6 +42,16 @@ describe("buildOrgTree", () => {
   test("headcount đếm mỗi người một lần", () => {
     const [root] = buildOrgTree(ALL);
     expect(root && headcount(root)).toBe(4);
+  });
+  test("directCount = trực tiếp gồm trưởng phòng, không đếm phòng con, tổng ≥ trực tiếp", () => {
+    const [root] = buildOrgTree(ALL);
+    expect(root && directCount(root)).toBe(1);
+    const kd = root?.children[0];
+    expect(kd && directCount(kd)).toBe(2);
+    // trưởng phòng không nằm trong members vẫn được đếm
+    const [x] = buildOrgTree([d(7, "X", null, 20, [21])]);
+    expect(x && directCount(x)).toBe(2);
+    expect(root && directCount(root) <= headcount(root)).toBe(true);
   });
 });
 

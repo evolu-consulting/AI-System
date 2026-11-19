@@ -1,3 +1,4 @@
+// CR-189 · mỗi người kèm `job_title` (hồ sơ người, cùng câu SQL, lọc tenant) cho thẻ phòng.
 // CR-139 · Q13 · `GET /org` — sơ đồ tổ chức CHỈ XEM cho người dùng thường của gói: phòng ban (cha–con) + trưởng phòng + thành viên.
 // Quyền `read` của gói; user ngoài (đối tác) ⇒ 403. MỘT câu SQL cố định, lọc `tenant_id` tường minh, không N+1.
 import { type ContractsOrg, ORG_DEPARTMENTS_MAX } from "@ai/contracts/pack-contracts";
@@ -8,7 +9,7 @@ import { Hono } from "hono";
 import { AppError } from "../../../../lib/errors";
 import { type PackAccessView, type PackGuardVars, packGuard } from "./pack-guard.middleware";
 
-type Person = { id: string; name: string };
+type Person = { id: string; name: string; job_title: string | null };
 type Row = {
   id: string;
   name: string;
@@ -19,9 +20,11 @@ type Row = {
 
 export const ORG_SQL = (tenantId: string) => sql`
   select d.group_id::text as id, coalesce(nullif(g.name->>'vi', ''), g.key) as name, d.parent_group_id::text as parent_id,
-    (select jsonb_build_object('id', h.id, 'name', coalesce(nullif(h.display_name, ''), h.username)) from admin.users h
+    (select jsonb_build_object('id', h.id, 'name', coalesce(nullif(h.display_name, ''), h.username),
+        'job_title', (select pp.job_title from hub.people_profiles pp where pp.tenant_id = d.tenant_id and pp.user_id = h.id)) from admin.users h
       where h.id = d.head_user_id and h.tenant_id = d.tenant_id and h.active and not h.locked_by_tenant) as head,
-    coalesce((select jsonb_agg(jsonb_build_object('id', u.id, 'name', coalesce(nullif(u.display_name, ''), u.username))
+    coalesce((select jsonb_agg(jsonb_build_object('id', u.id, 'name', coalesce(nullif(u.display_name, ''), u.username),
+          'job_title', (select pp.job_title from hub.people_profiles pp where pp.tenant_id = d.tenant_id and pp.user_id = u.id))
         order by lower(coalesce(nullif(u.display_name, ''), u.username)), u.id)
       from admin.group_members m join admin.users u on u.id = m.user_id and u.tenant_id = m.tenant_id
       where m.tenant_id = d.tenant_id and m.group_id = d.group_id and u.active and not u.locked_by_tenant and u.kind = 'internal'), '[]'::jsonb) as members

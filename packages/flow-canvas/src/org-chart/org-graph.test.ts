@@ -41,14 +41,23 @@ describe("buildOrgGraph", () => {
     expect(at("a")?.x).toBe(Math.round(((at("b")?.x ?? 0) + (at("c")?.x ?? 0)) / 2));
     expect(Math.abs((at("c")?.x ?? 0) - (at("b")?.x ?? 0))).toBeGreaterThanOrEqual(ORG_NODE_W);
   });
-  test("số người = số người khác nhau cả nhánh; công ty có tên truyền vào", () => {
+  test("số người trực tiếp (gồm trưởng phòng) + tổng cả nhánh, công ty có tên truyền vào", () => {
     const g = buildOrgGraph(ALL, "Công ty");
-    expect(g.nodes.find((n) => n.id === "a")?.data.count).toBe(4);
-    expect(g.nodes.find((n) => n.id === "b")?.data.count).toBe(2);
+    const at = (id: string) => g.nodes.find((n) => n.id === id)?.data;
+    expect(at("a")).toMatchObject({ count: 1, total: 4, hasChildren: true });
+    expect(at("b")).toMatchObject({ count: 2, total: 2, hasChildren: false });
+    expect(at("c")?.count).toBe(2);
     expect(g.nodes.find((n) => n.id === ORG_ROOT_ID)?.data).toMatchObject({
       kind: "company",
       name: "Công ty",
     });
+  });
+  test("hàng avatar nhân viên không gồm trưởng phòng, trưởng phòng ngoài members vẫn được đếm", () => {
+    const g = buildOrgGraph([d("k", "K", null, 2, [2, 3, 4])], "Công ty");
+    expect(g.nodes.find((n) => n.id === "k")?.data.staff.map((m) => m.id)).toEqual(["u3", "u4"]);
+    const h = buildOrgGraph([d("k", "K", null, 9, [3])], "Công ty");
+    expect(h.nodes.find((n) => n.id === "k")?.data.count).toBe(2);
+    expect(h.nodes.find((n) => n.id === "k")?.data.staff.map((m) => m.id)).toEqual(["u3"]);
   });
   test("phòng mồ côi (cha không tồn tại) treo dưới gốc", () => {
     const g = buildOrgGraph([d("x", "Mồ côi", "ghost", null, [])], "Công ty");

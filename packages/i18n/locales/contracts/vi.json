@@ -312,6 +312,7 @@
       "editFail": "Không mở được trang chỉnh sơ đồ. Vui lòng thử lại.",
       "people_one": "{{count}} người",
       "people_other": "{{count}} người",
+      "peopleTotal": "· tổng {{count}}",
       "head": "Trưởng phòng",
       "noHead": "Chưa có trưởng phòng",
       "search": "Tìm phòng ban hoặc người",

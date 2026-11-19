@@ -137,7 +137,12 @@ export type ContractPricesResponse = z.infer<typeof ContractPricesResponseSchema
 
 // ---------- CR-139 · sơ đồ tổ chức (chỉ xem) ----------
 export const ORG_DEPARTMENTS_MAX = 500;
-const ContractsOrgPerson = z.strictObject({ id: z.uuid(), name: z.string().min(1).max(200) });
+/** CR-189 · `job_title` (chức vụ, hồ sơ người) cho danh sách avatar; avatar vẽ theo màu `id` (chưa có ảnh ở API này). */
+const ContractsOrgPerson = z.strictObject({
+  id: z.uuid(),
+  name: z.string().min(1).max(200),
+  job_title: z.string().max(80).nullish(),
+});
 /** `GET /pack/contracts/org` · phòng ban phẳng (client dựng cây theo `parent_id`): trưởng phòng + thành viên đang dùng được. */
 export const ContractsOrgSchema = z.strictObject({
   departments: z

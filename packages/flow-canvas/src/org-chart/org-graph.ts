@@ -1,7 +1,7 @@
 // CR-142 · sơ đồ tổ chức dạng cây: danh sách phòng ban phẳng (parent) ⇒ nodes/edges có toạ độ (cây từ trên xuống) + tìm phòng.
 // Thuần (không React/xyflow). Bố cục tự viết (anh em cạnh nhau, cha ở giữa con) — không cần worker ELK, chạy đồng bộ, O(n).
 
-export type OrgChartPerson = { id: string; name: string };
+export type OrgChartPerson = { id: string; name: string; jobTitle?: string | null };
 export type OrgChartDept = {
   id: string;
   name: string;
@@ -13,7 +13,7 @@ export type OrgChartDept = {
 
 export const ORG_ROOT_ID = "__company__";
 export const ORG_NODE_W = 232;
-export const ORG_NODE_H = 96;
+export const ORG_NODE_H = 136;
 const GAP_X = 28;
 const GAP_Y = 56;
 
@@ -21,10 +21,22 @@ export type OrgNodeData = {
   kind: "company" | "dept";
   name: string;
   head: OrgChartPerson | null;
-  /** Số người khác nhau trong cả nhánh. */
+  /** BR-189-2 · «N người»: trực tiếp = thành viên ∪ trưởng phòng (không đếm phòng con). Công ty: tổng mọi người. */
   count: number;
+  /** BR-189-2 · «tổng M»: số người khác nhau cả nhánh; chỉ khác `count` khi có phòng con. Công ty: bằng `count`. */
+  total: number;
+  /** Có phòng con ⇒ thẻ hiện «· tổng M». */
+  hasChildren: boolean;
+  /** Hàng avatar nhân viên: thành viên trực tiếp, KHÔNG gồm trưởng phòng. */
+  staff: readonly OrgChartPerson[];
   members: readonly OrgChartPerson[];
 };
+
+/** Nhân viên của thẻ (không gồm trưởng phòng, mỗi người một lần). Thuần. */
+export function staffOf(d: Pick<OrgChartDept, "head" | "members">): OrgChartPerson[] {
+  const seen = new Set<string>(d.head ? [d.head.id] : []);
+  return d.members.filter((m) => !seen.has(m.id) && seen.add(m.id));
+}
 export type OrgGraphNode = { id: string; x: number; y: number; data: OrgNodeData };
 export type OrgGraphEdge = { id: string; source: string; target: string };
 export type OrgGraph = { nodes: OrgGraphNode[]; edges: OrgGraphEdge[] };
@@ -76,6 +88,7 @@ export function buildOrgGraph(depts: readonly OrgChartDept[], rootName: string):
   const place = (id: string, depth: number): { x: number; people: Map<string, OrgChartPerson> } => {
     const d = byId.get(id);
     const people = ownPeople(d);
+    const direct = people.size;
     const childIds = kids.get(id) ?? [];
     const xs: number[] = [];
     for (const c of childIds) {
@@ -91,8 +104,26 @@ export function buildOrgGraph(depts: readonly OrgChartDept[], rootName: string):
       x: Math.round(x),
       y: depth * (ORG_NODE_H + GAP_Y),
       data: d
-        ? { kind: "dept", name: d.name, head: d.head, count: people.size, members: d.members }
-        : { kind: "company", name: rootName, head: null, count: people.size, members: [] },
+        ? {
+            kind: "dept",
+            name: d.name,
+            head: d.head,
+            count: direct,
+            total: people.size,
+            hasChildren: childIds.length > 0,
+            staff: staffOf(d),
+            members: d.members,
+          }
+        : {
+            kind: "company",
+            name: rootName,
+            head: null,
+            count: people.size,
+            total: people.size,
+            hasChildren: false,
+            staff: [],
+            members: [],
+          },
     });
     return { x, people };
   };

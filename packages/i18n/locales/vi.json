@@ -691,6 +691,7 @@
     "preview": "Bấm một phòng trên sơ đồ để sửa phòng đó ở bên dưới.",
     "people_one": "{count} người",
     "people_other": "{count} người",
+    "peopleTotal": "· tổng {count}",
     "zoomIn": "Phóng to",
     "zoomOut": "Thu nhỏ",
     "fit": "Vừa khung",

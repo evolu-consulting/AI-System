@@ -36,6 +36,7 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
     () => ({
       noHead: t("contracts.orgChart.noHead"),
       people: (count: number) => t("contracts.orgChart.people", { count }),
+      peopleTotal: (count: number) => t("contracts.orgChart.peopleTotal", { count }),
       canvas: t("contracts.orgChart.chart"),
       controls: {
         title: t("contracts.orgChart.controls"),

@@ -299,6 +299,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@ai/contracts": "workspace:*",
+        "@ai/web-kit": "workspace:*",
         "@xyflow/react": "12.11.6",
         "elkjs": "0.12.0",
         "lucide-react": "1.49.0",

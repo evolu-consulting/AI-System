@@ -312,6 +312,7 @@
       "editFail": "Could not open the chart editor. Please try again.",
       "people_one": "{{count}} person",
       "people_other": "{{count}} people",
+      "peopleTotal": "· total {{count}}",
       "head": "Department head",
       "noHead": "No department head",
       "search": "Search a department or person",

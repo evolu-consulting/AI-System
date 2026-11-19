@@ -1,6 +1,7 @@
 // CR-142 · sơ đồ tổ chức dạng cây (xyflow, chỉ xem): Công ty ở gốc → phòng → phòng con. Dùng ở Sổ Hợp Tác (xem) và admin «Cơ cấu» (xem trước, bấm thẻ ⇒ chọn phòng).
 // Chỉ nạp lười (`import()` ở host). Chữ do host cấp (`labels`); lớp CSS dùng token shadcn có ở cả hai web.
 import "@xyflow/react/dist/base.css";
+import { PersonAvatar, PersonAvatarGroup } from "@ai/web-kit/ui/kit/person-avatar";
 import {
   Background,
   Controls,
@@ -25,6 +26,8 @@ import {
 export type OrgChartLabels = {
   noHead: string;
   people: (count: number) => string;
+  /** «· tổng M» — chỉ hiện khi phòng có phòng con. */
+  peopleTotal: (total: number) => string;
   canvas: string;
   controls?: { title: string; zoomIn: string; zoomOut: string; fit: string };
 };
@@ -52,55 +55,72 @@ type CardData = OrgNodeData & {
 };
 type CardNode = Node<CardData, "org">;
 
-function Initials({ name }: { name: string }) {
-  const t = name.trim().split(/\s+/);
-  const s = ((t[t.length - 1]?.[0] ?? "") + (t.length > 1 ? (t[0]?.[0] ?? "") : "")).toUpperCase();
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
-    >
-      {s}
-    </span>
-  );
+function staffList(data: CardData) {
+  return data.staff.map((m) => ({ id: m.id, name: m.name, jobTitle: m.jobTitle ?? null }));
 }
 
+function ringClass(data: CardData): string {
+  if (data.selected) return "border-primary ring-2 ring-primary";
+  return data.lit ? "border-primary ring-2 ring-primary/50" : "border-border";
+}
+
+/** BR-189-2 · thẻ phòng: tên · trưởng phòng (avatar + họ tên) · «N người · tổng M» · hàng avatar nhân viên (bấm mở danh sách). */
 function OrgCard({ data }: NodeProps<CardNode>) {
   const company = data.kind === "company";
-  const ring = data.selected
-    ? "border-primary ring-2 ring-primary"
-    : data.lit
-      ? "border-primary ring-2 ring-primary/50"
-      : "border-border";
+  const ring = ringClass(data);
+  const staff = staffList(data);
   return (
     <>
       <HiddenHandle type="target" position={Position.Top} />
-      <button
-        type="button"
+      <div
         data-testid={`org-node-${data.nodeId}`}
         data-selected={data.selected ? "true" : undefined}
         data-lit={data.lit ? "true" : undefined}
-        disabled={company}
-        onClick={() => data.onSelect?.(data.nodeId)}
         style={{ width: ORG_NODE_W, height: ORG_NODE_H }}
-        className={`flex flex-col justify-between rounded-lg border bg-card px-3 py-2 text-left text-card-foreground shadow-sm ${ring} ${company ? "cursor-default bg-muted" : "cursor-pointer hover:bg-accent"}`}
+        className={`flex flex-col rounded-lg border bg-card text-left text-card-foreground shadow-sm ${ring} ${company ? "bg-muted" : ""}`}
       >
-        <span className="line-clamp-2 text-sm font-semibold leading-tight">{data.name}</span>
-        {company ? (
-          <span className="text-xs text-muted-foreground">{data.labels.people(data.count)}</span>
-        ) : (
-          <span className="flex items-center gap-2 text-xs">
-            {data.head ? <Initials name={data.head.name} /> : null}
-            <span
-              data-testid="org-head"
-              className={`min-w-0 flex-1 truncate ${data.head ? "" : "text-muted-foreground"}`}
-            >
-              {data.head ? data.head.name : data.labels.noHead}
+        <button
+          type="button"
+          data-testid={`org-open-${data.nodeId}`}
+          disabled={company}
+          onClick={() => data.onSelect?.(data.nodeId)}
+          className={`flex min-h-0 flex-1 flex-col gap-1 rounded-t-lg px-3 pt-2 text-left ${company ? "cursor-default" : "cursor-pointer hover:bg-accent"}`}
+        >
+          <span className="line-clamp-1 text-sm font-semibold leading-tight">{data.name}</span>
+          {company ? null : (
+            <span className="flex items-center gap-2 text-xs">
+              {data.head ? (
+                <PersonAvatar
+                  id={data.head.id}
+                  name={data.head.name}
+                  size={24}
+                  interactive={false}
+                />
+              ) : null}
+              <span
+                data-testid="org-head"
+                className={`min-w-0 flex-1 truncate ${data.head ? "" : "text-muted-foreground"}`}
+              >
+                {data.head ? data.head.name : data.labels.noHead}
+              </span>
             </span>
-            <span className="shrink-0 text-muted-foreground">{data.labels.people(data.count)}</span>
+          )}
+          <span className="text-xs text-muted-foreground" data-testid="org-count">
+            {data.labels.people(data.count)}
+            {data.hasChildren ? ` ${data.labels.peopleTotal(data.total)}` : ""}
           </span>
-        )}
-      </button>
+        </button>
+        <div className="nodrag nopan flex h-9 items-center px-3 pb-2">
+          {staff.length > 0 ? (
+            <PersonAvatarGroup
+              people={staff}
+              size={24}
+              testId="org-card-avatars"
+              className="min-h-6"
+            />
+          ) : null}
+        </div>
+      </div>
       <HiddenHandle type="source" position={Position.Bottom} />
     </>
   );
