@@ -67,8 +67,13 @@ async function flows(key: string, authUrl: string, hubUrl: string, token: string
   for (const r of rep) console.log(`smoke-flows: ${key} — «${r.name}» đã ${r.action}`);
 }
 
-/** Danh bạ công ty mặc định (công ty mới tạo) rồi bật như quản trị công ty làm tay (PUT /admin/tenants/:id/directory) để hành trình đi tiếp. */
-async function directory(key: string, authUrl: string, token: string): Promise<void> {
+/** Danh bạ công ty mặc định (công ty mới tạo) rồi bật như quản trị công ty làm tay (PUT /pack/contracts/connect/listing, CR-191) để hành trình đi tiếp. */
+async function directory(
+  key: string,
+  authUrl: string,
+  hubUrl: string,
+  token: string,
+): Promise<void> {
   if (!SMOKE_KEY.test(key)) fail(`chỉ nhận smoke-a|smoke-b, không nhận «${key}»`);
   const admin = caller(authUrl, token);
   const tenants = must(await admin("GET", "/admin/tenants?limit=100"), [200], "đọc công ty");
@@ -79,13 +84,13 @@ async function directory(key: string, authUrl: string, token: string): Promise<v
   console.log(`DIRECTORY ${key} ${prof.directory_listed === true ? "on" : "off"}`);
   const res = await fetch(`${authUrl}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-App": "contracts" },
     body: JSON.stringify({ tenant_key: key, username: `${key}-gd`, password: env("SMOKE_PW") }),
   });
   const j = (await res.json()) as Json;
   if (j.status !== "authenticated") fail(`đăng nhập ${key}-gd → ${res.status}`);
   must(
-    await caller(authUrl, String(j.access_token))("PUT", `/admin/tenants/${tid}/directory`, {
+    await caller(hubUrl, String(j.access_token))("PUT", "/pack/contracts/connect/listing", {
       listed: true,
     }),
     [200],
@@ -100,7 +105,7 @@ async function main(): Promise<void> {
   const { token, sub } = await login(authUrl);
   if (cmd === "actor") return console.log(sub);
   if (cmd === "flows") return flows(key ?? "", authUrl, hubUrl, token);
-  if (cmd === "directory") return directory(key ?? "", authUrl, token);
+  if (cmd === "directory") return directory(key ?? "", authUrl, hubUrl, token);
   fail("dùng: actor | flows | directory smoke-a|smoke-b");
 }
 if (import.meta.main)

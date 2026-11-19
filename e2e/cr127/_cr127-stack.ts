@@ -11,8 +11,8 @@ import {
   featureIdByKey,
   grantFeature,
   type Session,
+  setCompanyListed,
   setCompanyProfile,
-  setDirectoryListed,
   tenantIdByKey,
 } from "../_kit/api";
 import { approve, enableFlowTriggers, esignNode, finish, partnerSendNode } from "../_kit/flows";
@@ -175,8 +175,15 @@ async function partnerPair(
   const fid = await featureIdByKey(API, p, "contracts-partner-confirm");
   await grantFeature(API, p, fid, idA);
   await grantFeature(API, p, fid, idB);
-  const bAdmin = await adminOf(b);
-  await setDirectoryListed(API, bAdmin, idB, true);
+  // CR-191: «cho tìm thấy» qua route gói contracts, do giám đốc (quản trị Sổ Hợp Tác) của công ty B
+  const bBoss = await apiLogin({
+    base: API,
+    tenantKey: envOf(b).tenantKey,
+    username: U.director,
+    password: PW,
+    app: "contracts",
+  });
+  await setCompanyListed(HUB, bBoss, true);
   const members = [U.director, U.accounting];
   for (const [key, name] of [
     ["phong-kinh-doanh", "Phòng Kinh doanh"],

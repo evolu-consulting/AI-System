@@ -14,8 +14,8 @@ import {
   apiLogin,
   featureIdByKey,
   grantFeature,
+  setCompanyListed,
   setCompanyProfile,
-  setDirectoryListed,
   tenantIdByKey,
 } from "../_kit/api";
 import { enableFlowTriggers } from "../_kit/flows";
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
       password: pw,
       app: "contracts",
     });
-    await setDirectoryListed(api, boss, id, true);
+    await setCompanyListed(hubUrl, boss, true);
     await enableFlowTriggers(key);
     // quy trình: người = email THẬT ở yaml → tài khoản fixture cùng tên
     const g = (await adm("GET", `/admin/groups?tenant_id=${id}&limit=200`)).json.items as Json[];

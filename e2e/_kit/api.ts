@@ -445,20 +445,6 @@ export async function setCompanyListed(hub: string, s: Session, listed: boolean)
   });
 }
 
-/** CR-124 · quản trị công ty bật/tắt "Cho phép công ty khác tìm thấy và gửi HĐ cho chúng tôi" — `PUT /admin/tenants/:id/directory`. */
-export async function setDirectoryListed(
-  admin: string,
-  s: Session,
-  tenantId: string,
-  listed: boolean,
-): Promise<void> {
-  await call(`${admin}/admin/tenants/${tenantId}/directory`, {
-    method: "PUT",
-    token: s.token,
-    body: JSON.stringify({ listed }),
-  });
-}
-
 /** Quản trị công ty tạo nhóm (`POST /admin/groups`) với khoá cho trước rồi thêm thành viên theo tên đăng nhập. Trả id nhóm. */
 export async function createGroupWith(
   admin: string,

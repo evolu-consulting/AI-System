@@ -125,7 +125,7 @@ ea143e8c08ca83e4c59cefa90e1cbd0b3a9b0ed70bff4dcb1da881f5573ff0ca  e2e/P-d/admin-
 fa9d32e553dd9fb86b5fb6b2ffd64ee5f9724df4260c3ff3c028c2b7d758079d  e2e/P-d/chat-uat-fixes.pd.ts
 9b9ab76d2d89c970fa291af89dd52b9da7ab78f29ae4cc0f147476fa69c8ad2a  e2e/P-d/playwright.pd.config.ts
 cc295b4a47e043d35e1929e6ffe834a747fb07bcb4b7e0f5f7f08644b3648ca2  e2e/_kit/README.md
-e827003272203f31ecee85fcc357dc2ce9a64a4afc0a2a60fc8f376266d47075  e2e/_kit/api.ts
+9a639f953b752cc1a254008ebf279cbf6466af43c375aac056aa71d6f1fc8aef  e2e/_kit/api.ts
 6471c6a451ed0abf7060d81e40ef8fec72c4cc2d07f7d4be808942f1aeff79a6  e2e/_kit/canvas-geometry.ts
 146d1bf0ce8d190a31838ba707485f2e1e69633300e909d9aae6a9d3d91c5444  e2e/_kit/flows.ts
 d35f62b6e2054bea3936ab0d05447de996c92b7ea200ba0f3cbdfb1c0a563fc3  e2e/_kit/mobile-rules.ts
@@ -503,7 +503,7 @@ f84e4e9faf2e5417e9526675fa71271c1e74afe603cdb89de76bea8431e2b4a0  e2e/cr121-shel
 8f0411343aad3c02c6043eea45ca66230f9f7ce5123aac2a210abc68905649a5  e2e/cr121-tenant-profile.spec.ts
 d3e546a0438df688fc74b62232b3e8e851a5e030d90a2a4dc9f351c37d5b11eb  e2e/cr121-tenants-list.spec.ts
 e29d6156314efea086f134d06d52a70a0e73fef5ece338a2628ee0f5b469bdca  e2e/cr127/_cr127-kit.ts
-820c39bde85d3eda2b7c27fb0dcf7f9a04d59f1cc01cb8c2b92081a21135d838  e2e/cr127/_cr127-stack.ts
+31f73c603630ffb6010ad31c6d43e647ead448a0907b4ace0d09c5ebbccbd065  e2e/cr127/_cr127-stack.ts
 a0d025e4d7d8b3538652952b994d959875b037262293a4a78aa36645106a71d7  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
 748e552aa7a470472a3b7c6c31b2719594ca44377c41c6e083f330dc382a46aa  e2e/cr127/j03-uy-quyen.spec.ts
 a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-thuc-hien-giao-thieu-phat.spec.ts
@@ -579,7 +579,7 @@ b2139b99cd343e811865e9dde7f6bb918457b7892b582aaa40ceebad2aaf1be8  e2e/deployed/s
 4f2b7a3b9457d7520f9f211996552048b0f1975a5ee832344c16c2b31faee2aa  e2e/features.spec.ts
 cdb5848aa8f88422a5328e4d54390735db103a4dfe16cce1c3444dc2cd2b5ff4  e2e/flows3/_flows3-kit.ts
 449d73a85d4605913431241f56ed8afeed1456964f666156c50b5f025befa1a3  e2e/flows3/_flows3-org.ts
-cf765bd5b24b5489de72dc4155ace8c7652e8b60ee9e272e6daf359fce0dfb2d  e2e/flows3/_flows3-stack.ts
+0936e59951334ecf80a9abd5a2e263c4a0a455263b1aeaf847049b2fdc3f2e46  e2e/flows3/_flows3-stack.ts
 263ff6fb6ac6a2660f4ffdb49ba88a3b5fbc00c0d460a23560c91ee8212c3d0e  e2e/flows3/_flows3-who.ts
 25902f7a0e832f5f95daf542fdce1fdaa390e82a4be125ad40f718eebf644bd6  e2e/flows3/hop-dong-quy-trinh-3-cong-ty.spec.ts
 2d0b5a16f60b3ccc5f2fc932716a92ea60d110079adfcbcd5ef6d6de75279426  e2e/flows3/playwright.flows3.config.ts
