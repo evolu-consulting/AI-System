@@ -202,6 +202,9 @@ export const MentionablePersonSchema = z.strictObject({
 });
 export type MentionablePerson = z.infer<typeof MentionablePersonSchema>;
 
+export const POST_SOURCES = ["own", "connected"] as const;
+export type FeedSource = (typeof POST_SOURCES)[number];
+
 export const PostViewSchema = z.strictObject({
   id: z.string(),
   type: z.enum(POST_TYPES),
@@ -209,6 +212,13 @@ export const PostViewSchema = z.strictObject({
   authorOrgName: z.string(),
   authorName: z.string(),
   authorSide: z.enum(["host", "partner"]),
+  /** CR-191 BR-191-3 · chức vụ người đăng; vắng khi chưa nhập. */
+  authorTitle: z.string().max(80).optional(),
+  /** CR-191 BR-191-1 · nguồn bài trên bảng tin gộp: `own` = «Công ty mình» (gồm cả bài đối tác cộng đồng đăng trong công ty mình),
+   * `connected` = «Đối tác» (công ty đã kết nối; bản đã che, chỉ xem). Vắng = `own`. */
+  source: z.enum(POST_SOURCES).optional(),
+  /** CR-191 · chỉ bài `connected`: số tệp/ảnh đính kèm (chưa tải được chéo công ty — `media` rỗng). */
+  fileCount: z.number().int().nonnegative().optional(),
   /** Đối tác đã vô hiệu (chỉ chủ quản thấy nhãn "đối tác đã rời"). */
   authorLeft: z.boolean().optional(),
   createdAt: z.iso.datetime(),

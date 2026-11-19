@@ -30,7 +30,7 @@ function setup(over: Partial<ConnectRepo>) {
   const uow: PackUow<ConnectRepos> = {
     tenant: async (_w, fn) => {
       log.push("begin");
-      const out = await fn({ connect, posts: {} as never });
+      const out = await fn({ connect });
       log.push("commit");
       return out;
     },
@@ -134,7 +134,6 @@ describe("CR-161 · cc.link sau commit", () => {
               block: async () => true,
               owners: async () => [{ tenant_id: A, user_id: U1 }],
             } as never,
-            posts: {} as never,
           }),
       },
       selfName: async () => "",

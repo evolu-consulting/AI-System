@@ -12,6 +12,7 @@ import type {
 import { postActions } from "../domain/audience.rules";
 import type { CommentRow } from "./comment-list.repo";
 import type { Access } from "./community-access";
+import type { ConnectedRow } from "./feed-connected.sql";
 import type { PartnerRow } from "./org.repo";
 import type { PostRow, QuoteMarkRow } from "./post.sql";
 
@@ -44,6 +45,8 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
     authorOrgName: n.orgName(r.author_org),
     authorName: r.author_name,
     authorSide: r.author_org === null ? "host" : "partner",
+    ...(r.author_title ? { authorTitle: r.author_title } : {}),
+    source: "own",
     createdAt: iso(r.created_at),
     ...(host || own ? { expiresAt: iso(r.expires_at) } : {}),
     edited: r.edited,
@@ -82,6 +85,33 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
     ...(r.aud ? { audience: r.aud as PostAudience } : {}),
     ...(r.quotes?.length ? { quotes: r.quotes.map(markView) } : {}),
     ...(hint ? { hostHint: hint } : {}),
+  };
+}
+
+/** CR-191 · bài của công ty ĐÃ KẾT NỐI (bản đã che): chỉ xem — không thao tác, không tệp tải về (chỉ số tệp), chưa bình luận chéo
+ * (lát `cr191-cross-comment`). Không bao giờ có `hidden`/`hits`/`audience`/`quotes`/`hostHint`/`expiresAt`. */
+export function connectedView(r: ConnectedRow): PostView {
+  return {
+    id: r.id,
+    type: r.type,
+    authorOrgId: r.tenant_id,
+    authorOrgName: r.company_name,
+    authorName: r.author_name,
+    authorSide: "partner",
+    ...(r.author_title ? { authorTitle: r.author_title } : {}),
+    source: "connected",
+    createdAt: iso(r.created_at),
+    edited: r.edited,
+    status: "active",
+    title: r.title,
+    body: r.body,
+    fields: r.fields,
+    cats: r.cats,
+    media: [],
+    fileCount: r.file_count,
+    commentCount: 0,
+    recentComments: [],
+    actions: [],
   };
 }
 

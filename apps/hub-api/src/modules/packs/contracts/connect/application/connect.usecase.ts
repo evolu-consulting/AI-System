@@ -1,17 +1,12 @@
 // CR-161 · lát 5 · use case kết nối hai công ty (spec §2 R2–R7, R10; §3). Một use case = một tx theo scope tenant (`PackUow`), số câu SQL cố
 // định (không phụ thuộc số hàng). Quyền người dùng (R1: chỉ Toàn quyền) do `packGuard` ở route — use case KHÔNG tự kiểm vai.
 // `cc.link` (`/me/stream`) phát SAU commit tới người Toàn quyền hai công ty (một pipeline Redis); lỗi Redis chỉ log, không ném.
-import type {
-  CcPost,
-  ConnectCompany,
-  ConnectLink,
-  ConnectStatus,
-} from "@ai/contracts/pack-contracts";
+import type { ConnectCompany, ConnectLink, ConnectStatus } from "@ai/contracts/pack-contracts";
 import type { PackStreamFrame, PackStreamPublishMany, PackUow, PackWho } from "../../../kit/public";
 import { type Cursor, encodeCursor } from "../domain/connect.codec";
-import type { CcOwner, ConnectRepo, PostsRepo } from "./connect.ports";
+import type { CcOwner, ConnectRepo } from "./connect.ports";
 
-export type ConnectRepos = { connect: ConnectRepo; posts: PostsRepo };
+export type ConnectRepos = { connect: ConnectRepo };
 export type ConnectDeps = {
   uow: PackUow<ConnectRepos>;
   /** Tên hiển thị của người gọi (lưu vào lời mời: «ai mời»). */
@@ -119,22 +114,6 @@ export function connectUsecases(d: ConnectDeps) {
         r.connect.links(q.status ?? null, q.cursor, q.limit + 1),
       );
       return page(rows, q.limit, (x) => x.since);
-    },
-
-    /** R10 · bài công khai (đã che) của công ty đã kết nối. */
-    async posts(
-      who: PackWho,
-      owner: string,
-      q: { cursor: Cursor | null; limit: number },
-    ): Promise<{ items: CcPost[]; next_cursor: string | null }> {
-      const rows = await d.uow.tenant(who, (r) => r.posts.page(owner, q.cursor, q.limit + 1));
-      const items = rows.slice(0, q.limit);
-      const last = items.at(-1);
-      return {
-        items,
-        next_cursor:
-          rows.length > q.limit && last ? encodeCursor({ t: last.created_at, id: last.id }) : null,
-      };
     },
   };
 }

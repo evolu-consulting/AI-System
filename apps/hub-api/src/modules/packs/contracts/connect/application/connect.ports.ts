@@ -1,10 +1,5 @@
-// CR-161 · lát 5 · cổng (port) của use case kết nối: adapter `connect.repo.ts` / `posts.repo.ts` cài, `connect.mount.ts` tiêm. Lớp 2 — chỉ kiểu.
-import type {
-  CcPost,
-  ConnectCompany,
-  ConnectLink,
-  ConnectStatus,
-} from "@ai/contracts/pack-contracts";
+// CR-161 · lát 5 · cổng (port) của use case kết nối: adapter `connect.repo.ts` cài, `connect.mount.ts` tiêm. Lớp 2 — chỉ kiểu.
+import type { ConnectCompany, ConnectLink, ConnectStatus } from "@ai/contracts/pack-contracts";
 import type { Cursor } from "../domain/connect.codec";
 
 export type CcOwner = { tenant_id: string; user_id: string };
@@ -29,8 +24,4 @@ export interface ConnectRepo {
   owners(tenants: readonly string[]): Promise<CcOwner[]>;
   notify(batch: readonly CcBell[]): Promise<number>;
   auditDisconnect(actor: string, other: string): Promise<void>;
-}
-
-export interface PostsRepo {
-  page(owner: string, cur: Cursor | null, limit: number): Promise<CcPost[]>;
 }

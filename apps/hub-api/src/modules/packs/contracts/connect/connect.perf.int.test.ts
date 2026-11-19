@@ -1,5 +1,5 @@
-// CR-161 · lát 6 · Luật 4c · spec §6 · đo đường nóng kết nối trên DB thật (role `contracts_rw`, RLS): 20.000 công ty trong Danh bạ, A có 2.000 dòng link (500 đã kết nối),
-// 10.000 bài công khai của B. (1) số câu SQL của repo mỗi thao tác CỐ ĐỊNH (đếm ở `tx.execute`); (2) p95 theo ngưỡng spec. In số thật ra console.
+// CR-161 · lát 6 · Luật 4c · spec §6 · đo đường nóng kết nối trên DB thật (role `contracts_rw`, RLS): 20.000 công ty trong Danh bạ, A có 2.000 dòng link (500 đã kết nối).
+// CR-191: đo bài công ty đã kết nối chuyển sang `community/adapters/feed-merge.perf.int.test.ts` (bảng tin gộp). (1) số câu SQL của repo mỗi thao tác CỐ ĐỊNH (đếm ở `tx.execute`); (2) p95 theo ngưỡng spec. In số thật ra console.
 // CR-169: phần trò chuyện đã gỡ — đo nay ở `messages/pmsg.perf.int.test.ts`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Tx } from "@ai/db";
@@ -9,7 +9,6 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow, packTenantOnly } from "../../kit/public";
 import { connectRepo } from "./adapters/connect.repo";
-import { postsRepo } from "./adapters/posts.repo";
 import { connectUsecases } from "./application/connect.usecase";
 
 const A = tenantId(1650);
@@ -19,7 +18,6 @@ const DUNG = userId(1651);
 const OTHERS = 20_000;
 const LINKS = 2_000;
 const CONNECTED = 500; // gồm B
-const POSTS = 10_000;
 const RUNS = 40;
 
 let o: Sql;
@@ -40,7 +38,6 @@ const uow = () =>
   packTenantOnly(
     createPackUow(db, "contracts", (tx, t) => ({
       connect: connectRepo(counting(tx), t),
-      posts: postsRepo(counting(tx)),
     })),
   );
 const who = { tenantId: A, userId: TIEN };
@@ -87,13 +84,7 @@ beforeAll(async () => {
   await o`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at, connect_requested_at)
     select ${A}, id, now() - rn * interval '1 minute', case when rn < ${CONNECTED} then now() end, case when rn >= ${CONNECTED} then now() end from pf_x`;
   await o`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at) select id, ${A}, now(), now() from pf_x where rn < ${CONNECTED}`;
-  await o`insert into community.posts (tenant_id, type, author_user_id, author_name, author_org, status, hidden, title_raw, title_masked, body_raw, body_masked,
-      fields_raw, fields_masked, hits, cats, aud_mode, created_at, expires_at)
-    select ${B}, 'sell', ${DUNG}, 'Người đăng', null, 'active', false, 'raw ' || i, 'bài ' || i, 'nội dung ' || i, 'nội dung ' || i,
-      '{}'::jsonb, '{}'::jsonb, '[]'::jsonb, array['dong-goi'], 'all', now() - i * interval '1 minute', now() + interval '30 days'
-    from generate_series(1, ${POSTS}) i`;
-  for (const t of ["admin.tenants", "hub.partner_links", "community.posts"])
-    await o.unsafe(`analyze ${t}`);
+  for (const t of ["admin.tenants", "hub.partner_links"]) await o.unsafe(`analyze ${t}`);
   db = createDb(urls().hubApi, { max: 4 });
 }, 600_000);
 afterAll(async () => {
@@ -119,17 +110,6 @@ describe("CR-161 · perf kết nối + bài công khai (spec §6)", () => {
     expect(page.items).toHaveLength(20);
     const r = await measure("GET /connect/links (20)", () =>
       connect().links(who, { cursor: null, limit: 20 }),
-    );
-    expect(r.sql).toBe(1);
-    expect(r.p95).toBeLessThanOrEqual(30);
-  });
-
-  it("bài công khai (20) của B (10.000 bài): 1 câu, p95 ≤ 30 ms", async () => {
-    const p = await connect().posts(who, B, { cursor: null, limit: 20 });
-    expect(p.items).toHaveLength(20);
-    expect(p.next_cursor).not.toBeNull();
-    const r = await measure("GET /connect/posts (20)", () =>
-      connect().posts(who, B, { cursor: null, limit: 20 }),
     );
     expect(r.sql).toBe(1);
     expect(r.p95).toBeLessThanOrEqual(30);

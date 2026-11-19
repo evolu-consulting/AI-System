@@ -22,6 +22,8 @@ export type PostRow = {
   author_org: string | null;
   author_user_id: string;
   author_name: string;
+  /** CR-191 BR-191-3: chức vụ người đăng (hồ sơ người của tenant); vắng ⇒ null. */
+  author_title: string | null;
   status: "active" | "archived" | "done" | "expired";
   hidden: boolean;
   edited: boolean;
@@ -32,7 +34,7 @@ export type PostRow = {
   fields: Record<string, string | null>;
   hits: unknown[] | null;
   cats: string[];
-  aud: { mode: string; cats: string[]; companies: string[] } | null;
+  aud: { mode: string; cats: string[]; companies: string[]; tenants: string[] } | null;
   media: MediaJson[];
   /** CR-145: người được nhắc (đối tác chỉ nhận phần tử là chủ quản hoặc công ty mình — lọc ở SQL). */
   mentions: { user_id: string; name: string }[] | null;
@@ -93,14 +95,21 @@ const partnerKeys = (rows: "page" | "v"): SQL =>
   sql`pk as (select cp.ext_org_id, cp.party_key
     from contracts.community_partners(array(select distinct x.author_org from ${sql.raw(rows)} x where x.author_org is not null)) cp)`;
 
-/** JSON một bài (alias `v` trên hàng đã có cột `shown`; cần CTE `pk` = `partnerKeys` — khoá SHT, chỉ chủ quản thấy). */
+/** CTE `tt`: chức vụ người đăng của các bài trong tập `rows` — MỘT lần gọi hàm DEFINER cho cả trang (community 0026, CR-191). */
+const authorTitles = (rows: "page" | "v"): SQL =>
+  sql`tt as (select t.user_id, t.job_title
+    from community.author_titles(array(select distinct x.author_user_id from ${sql.raw(rows)} x)) t)`;
+
+/** JSON một bài (alias `v` trên hàng đã có cột `shown`; cần CTE `pk` = `partnerKeys` — khoá SHT, chỉ chủ quản thấy — và `tt` = `authorTitles`). */
 const itemJson: SQL = sql`json_build_object(
   'id', v.id, 'type', v.type, 'author_org', v.author_org, 'author_user_id', v.author_user_id,
-  'author_name', v.author_name, 'status', v.eff, 'hidden', v.hidden, 'edited', v.edited,
+  'author_name', v.author_name,
+  'author_title', (select tt.job_title from tt where tt.user_id = v.author_user_id), 'status', v.eff, 'hidden', v.hidden, 'edited', v.edited,
   'created_at', v.created_at, 'expires_at', v.expires_at, 'title', v.t_title, 'body', v.t_body, 'fields', v.t_fields,
   'hits', case when (select packs.viewer_ext_org()) is null then v.hits end, 'cats', v.cats,
   'aud', case when (select packs.viewer_ext_org()) is null and v.author_org is null
-    then json_build_object('mode', v.aud_mode, 'cats', v.aud_cats, 'companies', v.aud_orgs) end,
+    then json_build_object('mode', v.aud_mode, 'cats', v.aud_cats, 'companies', v.aud_orgs,
+      'tenants', v.aud_tenants) end,
   'media', coalesce((select json_agg(json_build_object('id', m.id, 'kind', m.kind, 'label', m.label, 'url', m.url,
       'file_id', m.file_id, 'name', m.name, 'mime', m.mime, 'size', m.size_bytes) order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
   'mentions', (select json_agg(json_build_object('user_id', mu.user_id, 'name', mu.user_name) order by mu.created_at, mu.user_name)
@@ -144,7 +153,7 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
           or (v.created_at, v.id) < (${f.cursor?.at ?? null}::timestamptz, ${f.cursor?.id ?? null}::uuid))
       order by v.created_at desc, v.id desc
       limit ${f.limit + 1}::int
-    ), ${partnerKeys("page")}
+    ), ${partnerKeys("page")}, ${authorTitles("page")}
     select json_build_object(
       'items', coalesce((select json_agg(${itemJson} order by v.created_at desc, v.id desc) from page v), '[]'::json),
       'counts', (select json_build_object(
@@ -163,7 +172,8 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
 /** Một bài theo id dưới RLS người xem (vắng ⇒ null = 404). */
 export async function postById(tx: Tx, id: string): Promise<PostRow | null> {
   const rows = await tx.execute<{ r: PostRow }>(sql`
-    with v as (select p.*, ${shown} from community.posts p where p.id = ${id}::uuid), ${partnerKeys("v")}
+    with v as (select p.*, ${shown} from community.posts p where p.id = ${id}::uuid), ${partnerKeys("v")},
+      ${authorTitles("v")}
     select ${itemJson} as r from v`);
   return rows[0]?.r ?? null;
 }

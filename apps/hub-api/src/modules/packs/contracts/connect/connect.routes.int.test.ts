@@ -3,7 +3,6 @@
 // tạo dữ liệu nào) đồng ý được. Mã lỗi: 422 CONNECT_NOT_LISTED, 409 CONNECT_DECLINED / CONNECT_NOT_CONNECTED, 404 không lộ (42501), 400.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
-  CcPostsResponseSchema,
   ConnectInviteResponseSchema,
   ConnectListResponseSchema,
   ConnectSearchResponseSchema,
@@ -299,31 +298,12 @@ describe("CR-161 · R3/R5 mã lỗi, không lộ", () => {
   });
 });
 
-describe("CR-161 · R10 bài công khai của công ty đã kết nối", () => {
-  it("A xem bài B (đã che, chỉ bài công khai), phân trang bằng con trỏ; công ty thứ ba / không phải Toàn quyền ⇒ không xem được", async () => {
-    const p1 = await call<{
-      items: { title: string; body: string; fields: Record<string, unknown>; file_count: number }[];
-      next_cursor: string | null;
-    }>(TIEN, "GET", `/connect/posts/${B}?limit=1`);
-    expect(p1.status).toBe(200);
-    expect(CcPostsResponseSchema.safeParse(p1.body).success).toBe(true);
-    expect(p1.body.items.map((x) => x.title)).toEqual(["bai_moi"]);
-    expect(p1.body.items[0]?.body).toBe("SĐT *** bai_moi"); // bản đã che, không lộ số thật
-    expect(p1.body.items[0]?.fields).toEqual({ phone: "***" });
-    expect(JSON.stringify(p1.body)).not.toContain("0912345678");
-    expect(p1.body.next_cursor).not.toBeNull();
-    const p2 = await call<{ items: { title: string }[]; next_cursor: string | null }>(
-      TIEN,
-      "GET",
-      `/connect/posts/${B}?limit=1&cursor=${p1.body.next_cursor}`,
-    );
-    expect(p2.body.items.map((x) => x.title)).toEqual(["bai_cu"]);
-    expect(p2.body.next_cursor).toBeNull(); // bài `suppliers` không công khai ⇒ không có
-    expect((await call(TIEN, "GET", `/connect/posts/${B}?cursor=@@`)).status).toBe(400);
-    const c = await call(CUONG, "GET", `/connect/posts/${B}`);
-    expect([c.status, code(c)]).toEqual([404, "CONNECT_NOT_CONNECTED"]);
-    expect((await call(VY, "GET", `/connect/posts/${B}?limit=1`)).status).toBe(200); // CR-169: guard `read` — Vy (nhân viên, không Toàn quyền, không phải người mời) xem được
-    expect((await call(DUNG, "GET", `/connect/posts/${B}`)).status).toBe(400); // chính công ty mình: không đi đường này (22023)
+describe("CR-191 · gỡ «Bảng tin công ty» riêng (G1)", () => {
+  it("đường cũ /connect/posts/:tenant_id không còn — bài công ty đã kết nối nằm ở bảng tin gộp /pack/community/feed", async () => {
+    expect((await app(TIEN).request(`/connect/posts/${B}`)).status).toBe(404);
+    expect(
+      await o`select 1 from pg_proc where proname = 'cc_posts' and pronamespace = 'community'::regnamespace`,
+    ).toHaveLength(0);
   });
 });
 
@@ -375,8 +355,6 @@ describe("CR-161 · R6 ngắt kết nối + audit", () => {
     expect(
       await o`select 1 from contracts.approval_settings_audit where tenant_id = ${A}`,
     ).toHaveLength(1); // 409 không ghi audit
-    const posts = await call(TIEN, "GET", `/connect/posts/${B}`);
-    expect([posts.status, code(posts)]).toEqual([404, "CONNECT_NOT_CONNECTED"]);
     const stranger = await call(CUONG, "DELETE", `/connect/links/${B}`);
     expect([stranger.status, code(stranger)]).toEqual([409, "CONNECT_NOT_CONNECTED"]);
     expect((await call(TIEN, "DELETE", `/connect/links/${A}`)).status).toBe(400); // tự ngắt
@@ -384,7 +362,7 @@ describe("CR-161 · R6 ngắt kết nối + audit", () => {
 });
 
 describe("CR-161 · quyền DB cho role gói (migration 0116)", () => {
-  it("contracts_rw có EXECUTE mọi hàm công khai hub 0145/0146 + community.cc_posts, KHÔNG có hàm nội bộ", async () => {
+  it("contracts_rw có EXECUTE mọi hàm công khai hub 0145/0146 + hub.cc_connected_ids (CR-191), KHÔNG có hàm nội bộ", async () => {
     const pub = [
       "hub.cc_owner_users(uuid[])",
       "hub.cc_connected(uuid,uuid)",
@@ -395,7 +373,7 @@ describe("CR-161 · quyền DB cho role gói (migration 0116)", () => {
       "hub.cc_notify(jsonb)",
       "hub.partner_link_accept(uuid)",
       "hub.partner_link_block(uuid)",
-      "community.cc_posts(uuid,timestamptz,uuid,integer)",
+      "hub.cc_connected_ids()",
     ];
     const internal = [
       "hub.cc_bell(uuid,uuid[],text,text,text,text,text)",

@@ -162,6 +162,13 @@
       "when": 1807000640000,
       "tag": "0025_cr191_audience_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1807000660000,
+      "tag": "0026_cr191_feed_connected",
+      "breakpoints": true
     }
   ]
 }

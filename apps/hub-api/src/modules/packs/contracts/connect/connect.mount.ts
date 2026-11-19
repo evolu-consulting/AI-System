@@ -1,4 +1,4 @@
-// CR-161 · dựng module kết nối hai công ty: `PackUow` (role `contracts_rw`, chỉ phạm vi người dùng) + repo + use case + route (kết nối, bài công khai).
+// CR-161 · dựng module kết nối hai công ty: `PackUow` (role `contracts_rw`, chỉ phạm vi người dùng) + repo + use case + route kết nối (CR-191: bài công ty đã kết nối nằm ở bảng tin gộp `/pack/community/feed`).
 // `redis` vắng ⇒ không phát `cc.link` (`/me/stream`). CR-169: trò chuyện + tệp + vòng nền dọn tệp đã chuyển sang module `messages` (hub `pmsg_*`);
 // `filebox`/`worker`/`signal` còn trong kiểu vì `connectDeps` dùng chung cho các module gói khác.
 import type { Db, Tx } from "@ai/db";
@@ -16,8 +16,6 @@ import {
 } from "../../kit/public";
 import { connectRepo } from "./adapters/connect.repo";
 import { connectRoutes } from "./adapters/connect.routes";
-import { postsRepo } from "./adapters/posts.repo";
-import { postsRoutes } from "./adapters/posts.routes";
 import { connectUsecases } from "./application/connect.usecase";
 
 export type ConnectModuleDeps = {
@@ -36,7 +34,6 @@ export function connectModule(
   const uow = packTenantOnly(
     createPackUow(db, "contracts", (tx: Tx, t: string) => ({
       connect: connectRepo(tx, t),
-      posts: postsRepo(tx),
     })),
   );
   const selfName = async (who: { tenantId: string; userId: string }) => (await self(who)).name;
@@ -44,6 +41,5 @@ export function connectModule(
   const uc = connectUsecases({ uow, selfName, publish });
   const r = new Hono<PackGuardVars>();
   r.route("/", connectRoutes(view, uc));
-  r.route("/", postsRoutes(view, uc));
   return r;
 }

@@ -40,10 +40,6 @@ export const ConnectListQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(CC_LIST_MAX).default(CC_LIST_DEFAULT),
   status: z.enum(["connected", "pending_in", "pending_out"]).optional(),
 });
-export const CcPostsQuerySchema = z.strictObject({
-  cursor: z.string().max(CC_CURSOR_MAX).optional(),
-  limit: z.coerce.number().int().min(1).max(CC_LIST_MAX).default(CC_LIST_DEFAULT),
-});
 export type ConnectInviteBody = z.infer<typeof ConnectInviteBodySchema>;
 export type ConnectListQuery = z.infer<typeof ConnectListQuerySchema>;
 
@@ -72,22 +68,6 @@ export const ConnectListResponseSchema = z.strictObject({
   next_cursor: z.string().nullable(),
 });
 export const ConnectInviteResponseSchema = z.strictObject({ status: ConnectStatusSchema });
-
-export const CcPostSchema = z.strictObject({
-  id: z.uuid(),
-  type: z.enum(["sell", "buy", "note"]),
-  title: z.string(),
-  body: z.string(),
-  fields: z.record(z.string(), z.unknown()),
-  cats: z.array(z.string()),
-  created_at: iso,
-  file_count: z.number().int().min(0),
-});
-export type CcPost = z.infer<typeof CcPostSchema>;
-export const CcPostsResponseSchema = z.strictObject({
-  items: z.array(CcPostSchema),
-  next_cursor: z.string().nullable(),
-});
 
 // ---------- Sự kiện realtime `/me/stream` (nằm trong union `MeStreamMsgEventSchema`, messages.ts) ----------
 export const CcLinkEventDataSchema = z.strictObject({

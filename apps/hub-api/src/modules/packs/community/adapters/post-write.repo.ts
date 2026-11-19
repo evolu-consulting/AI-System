@@ -34,13 +34,14 @@ export async function insertPost(tx: Tx, p: NewPost): Promise<string> {
   const c = p.content;
   const rows = await tx.execute<{ id: string }>(sql`
     insert into community.posts (tenant_id, type, author_user_id, author_name, author_org, title_raw, title_masked,
-      body_raw, body_masked, fields_raw, fields_masked, hits, cats, aud_mode, aud_cats, aud_orgs)
+      body_raw, body_masked, fields_raw, fields_masked, hits, cats, aud_mode, aud_cats, aud_orgs, aud_tenants)
     values (${p.tenantId}::uuid, ${p.type}, ${p.userId}::uuid, ${p.authorName}, ${p.org}::uuid, ${c.title.raw},
       ${c.title.masked}, ${c.body.raw}, ${c.body.masked}, ${JSON.stringify(c.fields.raw)}::jsonb,
       ${JSON.stringify(c.fields.masked)}::jsonb, ${hitsOf(c)}::jsonb,
       array(select jsonb_array_elements_text(${JSON.stringify(p.cats)}::jsonb)),
       ${p.audience?.mode ?? null}, array(select jsonb_array_elements_text(${JSON.stringify(p.audience?.cats ?? [])}::jsonb)),
-      array(select jsonb_array_elements_text(${JSON.stringify(p.audience?.companies ?? [])}::jsonb)::uuid))
+      array(select jsonb_array_elements_text(${JSON.stringify(p.audience?.companies ?? [])}::jsonb)::uuid),
+      array(select jsonb_array_elements_text(${JSON.stringify(p.audience?.tenants ?? [])}::jsonb)::uuid))
     returning id::text as id`);
   return rows[0]?.id as string;
 }
@@ -107,6 +108,9 @@ export async function updatePost(
       aud_orgs = case when ${audience !== null}::boolean
         then array(select jsonb_array_elements_text(${JSON.stringify(audience?.companies ?? [])}::jsonb)::uuid)
         else aud_orgs end,
+      aud_tenants = case when ${audience !== null}::boolean
+        then array(select jsonb_array_elements_text(${JSON.stringify(audience?.tenants ?? [])}::jsonb)::uuid)
+        else aud_tenants end,
       price_edited_at = case when (fields_raw ->> 'price') is distinct from (${JSON.stringify(c.fields.raw)}::jsonb ->> 'price')
         then now() else price_edited_at end,
       edited = true, edited_at = now(), updated_at = now()

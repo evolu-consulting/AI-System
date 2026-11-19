@@ -13,6 +13,7 @@ import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseIdParam, parseWith, readJson, withoutScopeKeys } from "../../../../lib/http";
 import type { PackGuardVars } from "../../kit/public";
+import { mergeNewest } from "../domain/feed-merge.rules";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as posts from "./post.service";
@@ -20,7 +21,7 @@ import type { FeedFilter } from "./post.sql";
 import { suggest as suggestPeople } from "./post-mention.service";
 import { quoteDeps } from "./quote.routes";
 import { hostHints } from "./quote.service";
-import { namesOf, postView } from "./views";
+import { connectedView, namesOf, postView } from "./views";
 
 const UUID = z.uuid();
 const audienceNotAllowed = () =>
@@ -58,20 +59,23 @@ function feedFilter(c: Context<PackGuardVars>, a: Access): FeedFilter {
   };
 }
 
-/** `GET /feed`: trang + đếm + facets (một câu) + con trỏ trang sau. */
+/** `GET /feed` (CR-191 bảng tin gộp): bài công ty mình + bài công ty đã kết nối, trộn mới nhất trước, `limit` bài/trang, con trỏ
+ * `(created_at, id)` dùng chung hai nguồn. Đếm + facets = của công ty mình (một câu). */
 async function feedJson(d: CommunityDeps, c: Context<PackGuardVars>, a: Access) {
   const f = feedFilter(c, a);
-  const raw = await posts.feed(d.uow, a, f);
+  const { own, connected } = await posts.feed(d.uow, a, f);
   const n = namesOf(a);
-  const page = raw.items.slice(0, f.limit);
-  const last = page.at(-1);
-  const more = raw.items.length > f.limit && last;
+  const { items, more } = mergeNewest(own.items, connected, f.limit);
+  const page = items.flatMap((x) => (x.src === "own" ? [x.row] : []));
+  const last = items.at(-1)?.row;
   const hints = await hostHints(quoteDeps(d), a, page); // C8: một lời gọi cổng đọc mỗi trang (chỉ chủ quản)
   return {
-    items: page.map((p) => postView(a, n, p, hints.get(p.id))),
-    counts: raw.counts,
-    facets: raw.facets,
-    ...(more ? { nextCursor: cursorFor(last.created_at, last.id) } : {}),
+    items: items.map((x) =>
+      x.src === "own" ? postView(a, n, x.row, hints.get(x.row.id)) : connectedView(x.row),
+    ),
+    counts: own.counts,
+    facets: own.facets,
+    ...(more && last ? { nextCursor: cursorFor(last.created_at, last.id) } : {}),
   };
 }
 

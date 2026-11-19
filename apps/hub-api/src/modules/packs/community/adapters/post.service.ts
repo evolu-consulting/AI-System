@@ -24,6 +24,7 @@ import { mediaKindOf } from "../domain/file.rules";
 import { EV_POST, postFacts } from "../domain/flow-events.rules";
 import { priceChanged } from "../domain/notify.rules";
 import { type Access, otherOrgNames } from "./community-access";
+import { type ConnectedRow, connectedQuery, notConnected } from "./feed-connected.sql";
 import { attachableFiles } from "./files.repo";
 import {
   emitEvent,
@@ -60,6 +61,12 @@ function checkAudience(a: Access, aud: Audience | undefined): Audience | null {
   const known = new Set(a.dir.orgs.map((o) => o.id));
   if (aud.companies.some((id) => !known.has(id))) throw appError("VALIDATION_ERROR");
   return aud;
+}
+
+/** CR-191: «Chọn công ty» chỉ nhận công ty ĐÃ KẾT NỐI (MỘT câu, trong tx của bài); khác ⇒ 400. */
+async function checkTenants(tx: Tx, aud: Audience | null): Promise<void> {
+  if (aud?.tenants?.length && (await notConnected(tx, aud.tenants)).length > 0)
+    throw appError("VALIDATION_ERROR");
 }
 
 function mergedFields(type: PostType, cur: Fields, patch: Fields | undefined): Fields {
@@ -124,8 +131,39 @@ const found = (r: PostRow | null): PostRow => {
   return r;
 };
 
-export const feed = (uow: Uow, a: Access, f: FeedFilter): Promise<FeedRaw> =>
-  uow.tenant(a.who, ({ tx }) => feedQuery(tx, a.who.tenantId, f));
+/** CR-191 · bảng tin gộp có kèm bài công ty đã kết nối? Chỉ người nội bộ, bài đang hiệu lực, không lọc theo thứ chỉ bài mình có
+ * (của tôi, người đăng, nhóm hàng, khu vực, từ khoá — hàm kết nối không lọc các thứ đó), không lọc «chỉ công ty mình». */
+export function withConnected(a: Access, f: FeedFilter): boolean {
+  return (
+    a.org === null &&
+    f.tab !== "archived" &&
+    !f.mine &&
+    f.authorUser === null &&
+    f.cat === null &&
+    f.area === null &&
+    f.q === null &&
+    f.author !== "host"
+  );
+}
+
+/** `GET /feed`: MỘT tx, số câu cố định — bài công ty mình (RLS, xin limit+1) + bài công ty đã kết nối (DEFINER, xin limit+1). */
+export const feed = (
+  uow: Uow,
+  a: Access,
+  f: FeedFilter,
+): Promise<{ own: FeedRaw; connected: ConnectedRow[] }> =>
+  uow.tenant(a.who, async ({ tx }) => {
+    const own = await feedQuery(tx, a.who.tenantId, f);
+    const connected = withConnected(a, f)
+      ? await connectedQuery(tx, {
+          cursor: f.cursor,
+          take: f.limit + 1,
+          type: f.tab === "all" || f.tab === "archived" ? null : f.tab,
+          source: f.author,
+        })
+      : [];
+    return { own, connected };
+  });
 
 /** Tạo bài; `contactDetected` = nhắc người đăng (HT-54). */
 export async function create(
@@ -151,6 +189,7 @@ export async function create(
       if (!partnerMayPost(input.type, me?.labels ?? []))
         throw new AppError("POST_TYPE_FORBIDDEN", 403, "Post type not allowed for your company");
     }
+    await checkTenants(tx, audience);
     const id = await insertPost(tx, {
       tenantId: a.who.tenantId,
       userId: a.who.userId,
@@ -233,10 +272,9 @@ export async function update(
         { title: input.title ?? cur.title_raw, body: input.body ?? cur.body_raw, fields },
         otherOrgNames(a),
       );
-      await updatePost(tx, id, content, {
-        cats: input.cats ?? null,
-        audience: checkAudience(a, input.audience),
-      });
+      const audience = checkAudience(a, input.audience);
+      await checkTenants(tx, audience);
+      await updatePost(tx, id, content, { cats: input.cats ?? null, audience });
       await replaceChildren(
         tx,
         { tenantId: a.who.tenantId, postId: id },
