@@ -91,6 +91,7 @@ export function extOrgError(code: ExternalOrgErrorCode, details?: unknown): AppE
 const ORG_DEPT_MESSAGES: Record<OrgDeptErrorCode, string> = {
   DEPT_NOT_EMPTY: "Department still has people or sub-departments",
   MEMBER_IS_HEAD: "This person is a department head; change the head first",
+  DEPT_IN_USE: "Department still has open review tasks assigned to it",
 };
 
 /** CR-189 · mã lỗi sửa cơ cấu (khối riêng `ORG_DEPT_ERRORS`). `details` = số đếm / id liên quan. */

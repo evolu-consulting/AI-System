@@ -40,6 +40,8 @@ export async function assertNameFree(
   if (r.length > 0) throw appError("NAME_TAKEN");
 }
 
+const KEY_TRIES_MAX = 1000;
+
 /** Key Group (`^[a-z0-9-]{2,32}$`) từ tên: bỏ dấu, thường, gạch nối; `taken` = các key đã có ⇒ thêm hậu tố `-2`, `-3`… */
 export function groupKeyOf(name: string, taken: ReadonlySet<string>): string {
   const base =
@@ -54,8 +56,9 @@ export function groupKeyOf(name: string, taken: ReadonlySet<string>): string {
       .replace(/-+$/g, "") || "phong";
   const first = base.length >= 2 ? base : `${base}-1`;
   if (!taken.has(first)) return first;
-  for (let n = 2; ; n++) {
+  for (let n = 2; n <= KEY_TRIES_MAX; n++) {
     const k = `${first}-${n}`;
     if (!taken.has(k)) return k;
   }
+  throw appError("KEY_TAKEN"); // hơn 1000 phòng cùng tên gốc: dừng thay vì lặp mãi
 }

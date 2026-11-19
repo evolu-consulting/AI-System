@@ -4,7 +4,7 @@
 //  - trưởng phòng của phòng KHÁC không chuyển được, trưởng phòng của chính X không bỏ được ⇒ 409 `MEMBER_IS_HEAD`.
 // Chỉ đụng `group_members` của Group là phòng ban (Group quyền/vai/beta không phải phòng ban thì giữ nguyên). Group vẫn
 // mang `feature_grants` ⇒ chuyển người có thể đổi quyền: mỗi lời gọi trả `access {gained, lost}` (số cặp người×tính năng
-// do nhóm cấp; cấp trực tiếp cho người không đổi) để màn hình báo trước/sau. Khoá theo thứ tự ở `org.shared.ts`.
+// do nhóm cấp: tính năng, agent, quy trình; cấp trực tiếp cho người không đổi) để màn hình báo trước/sau. Khoá theo thứ tự ở `org.shared.ts`.
 import type {
   DeptMemberRemoveResponse,
   DeptMembersAddRequest,
@@ -17,6 +17,7 @@ import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigSink, configWrite } from "../../lib/config/config-write";
 import { appError, extOrgError, orgDeptError } from "../../lib/errors";
 import { pgArray } from "../../lib/sql";
+import { hubItemsExpr, orgRefsReadable } from "./org.hub";
 import { lockOrgTree, type OrgCall, tenantOf } from "./org.shared";
 
 type Pair = { user_id: string; group_id: string };
@@ -75,7 +76,8 @@ const col = (p: Pair[], k: keyof Pair) =>
 
 /**
  * Quyền do nhóm cấp đổi bao nhiêu nếu gỡ `rem` và thêm `add` (cặp người×nhóm). TÍNH TRƯỚC khi ghi. Một câu, tập hợp:
- * trước = tính năng từ MỌI nhóm hiện tại của người; sau = trước trừ nhóm rời, cộng nhóm đến.
+ * mục = tính năng (`feature_grants`) + agent (`hub.agent_grants`) + quy trình chạy được (`process_defs.run_group_ids`);
+ * trước = mục từ MỌI nhóm hiện tại của người; sau = trước trừ nhóm rời, cộng nhóm đến. Mục còn từ nhóm khác không mất.
  */
 async function accessDelta(
   w: W,
@@ -84,21 +86,26 @@ async function accessDelta(
   add: Pair[],
 ): Promise<OrgAccessChange> {
   if (rem.length === 0 && add.length === 0) return { gained: 0, lost: 0 };
+  const hub = hubItemsExpr(await orgRefsReadable(w.tx), w.t);
   const r =
     (await w.tx.execute(sql`with rem as (select * from unnest(${col(rem, "user_id")}, ${col(rem, "group_id")}) as x(user_id, group_id)),
       add as (select * from unnest(${col(add, "user_id")}, ${col(add, "group_id")}) as x(user_id, group_id)),
-      cur as (select gm.user_id, gm.group_id, fg.feature_id
-        from admin.group_members gm join admin.feature_grants fg on fg.group_id = gm.group_id and fg.tenant_id = gm.tenant_id
+      gs as (select group_id from admin.group_members where tenant_id = ${w.t}::uuid and user_id = any(${pgArray(users, "uuid")})
+        union select group_id from add),
+      items as (select group_id, 'feature'::text as kind, feature_id as item_id from admin.feature_grants
+          where tenant_id = ${w.t}::uuid and group_id in (select group_id from gs)
+        union all ${hub}),
+      cur as (select gm.user_id, gm.group_id, i.kind, i.item_id
+        from admin.group_members gm join items i on i.group_id = gm.group_id
         where gm.tenant_id = ${w.t}::uuid and gm.user_id = any(${pgArray(users, "uuid")})),
-      bef as (select distinct user_id, feature_id from cur),
-      aft as (select c.user_id, c.feature_id from cur c
+      bef as (select distinct user_id, kind, item_id from cur),
+      aft as (select c.user_id, c.kind, c.item_id from cur c
           where not exists (select 1 from rem x where x.user_id = c.user_id and x.group_id = c.group_id)
-        union select a.user_id, fg.feature_id from add a
-          join admin.feature_grants fg on fg.group_id = a.group_id and fg.tenant_id = ${w.t}::uuid)
+        union select a.user_id, i.kind, i.item_id from add a join items i on i.group_id = a.group_id)
     select (select count(*)::int from bef b where not exists
-        (select 1 from aft a where a.user_id = b.user_id and a.feature_id = b.feature_id)) as lost,
+        (select 1 from aft a where a.user_id = b.user_id and a.kind = b.kind and a.item_id = b.item_id)) as lost,
       (select count(*)::int from aft a where not exists
-        (select 1 from bef b where a.user_id = b.user_id and a.feature_id = b.feature_id)) as gained`)) as unknown as OrgAccessChange[];
+        (select 1 from bef b where a.user_id = b.user_id and a.kind = b.kind and a.item_id = b.item_id)) as gained`)) as unknown as OrgAccessChange[];
   return r[0] as OrgAccessChange;
 }
 

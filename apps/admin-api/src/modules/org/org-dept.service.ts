@@ -13,6 +13,7 @@ import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError, extOrgError, orgDeptError } from "../../lib/errors";
 import { checkViolation, foreignKeyViolation } from "../../lib/pg-errors";
+import { groupRefCounts } from "./org.hub";
 import { assertNameFree, groupKeyOf, lockOrgTree, type OrgCall, tenantOf } from "./org.shared";
 
 /** Khoá hàng group (NO KEY UPDATE) và đọc phòng; chưa là phòng ban / ngoài công ty ⇒ 404. */
@@ -119,8 +120,9 @@ type EmptyCheck = { members: number; children: number; has_access: boolean };
 
 /**
  * Xoá phòng: CHẶN khi còn người (thành viên + trưởng phòng, không đếm trùng) hoặc phòng con ⇒ 409 `DEPT_NOT_EMPTY`
- * `{ members, children }`. Phòng rỗng: bỏ hàng phòng ban; Group bị xoá theo, TRỪ khi Group còn quyền/vai gắn vào
- * (`feature_grants` theo nhóm hoặc vai) — khi đó Group giữ lại để không mất cấu hình quyền. Trả `{ group_deleted }`.
+ * `{ members, children }`; nhóm đang được giao việc duyệt ĐANG MỞ (Hub) ⇒ 409 `DEPT_IN_USE` `{ open_reviews }`. Phòng rỗng:
+ * bỏ hàng phòng ban; Group bị xoá theo, TRỪ khi Group còn được dùng — `feature_grants`, vai, `hub.agent_grants`,
+ * `process_defs.run_group_ids`, từng được giao việc duyệt (đã đóng) — khi đó Group giữ lại để không mất cấu hình. Trả `{ group_deleted }`.
  */
 export function deleteDept(
   c: OrgCall,
@@ -136,15 +138,18 @@ export function deleteDept(
           where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid
         union select ${g.head_user_id}::uuid where ${g.head_user_id}::uuid is not null) p) as members,
       (select count(*)::int from admin.departments where parent_group_id = ${groupId}::uuid and tenant_id = ${t}::uuid) as children,
-      (exists(select 1 from admin.feature_grants where group_id = ${groupId}::uuid)
-        or exists(select 1 from admin.app_roles where group_id = ${groupId}::uuid)) as has_access`)) as unknown as EmptyCheck[];
+      (exists(select 1 from admin.feature_grants where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid)
+        or exists(select 1 from admin.app_roles where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid)) as has_access`)) as unknown as EmptyCheck[];
     const r = n[0] as EmptyCheck;
     if (r.members > 0 || r.children > 0)
       throw orgDeptError("DEPT_NOT_EMPTY", { members: r.members, children: r.children });
+    const refs = await groupRefCounts(tx, t, groupId);
+    if (refs.reviewsOpen > 0) throw orgDeptError("DEPT_IN_USE", { open_reviews: refs.reviewsOpen });
+    const keep = r.has_access || refs.agents + refs.processes + refs.reviewsAny > 0;
     await tx.execute(
       sql`delete from admin.departments where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid`,
     );
-    if (!r.has_access)
+    if (!keep)
       await tx.execute(
         sql`delete from admin.groups where id = ${groupId}::uuid and tenant_id = ${t}::uuid`,
       );
@@ -158,7 +163,7 @@ export function deleteDept(
         after: null,
         summary: {
           department: null,
-          group_deleted: !r.has_access,
+          group_deleted: !keep,
           before: {
             department: {
               name: g.name,
@@ -169,6 +174,6 @@ export function deleteDept(
         },
       }),
     );
-    return { group_deleted: !r.has_access };
+    return { group_deleted: !keep };
   });
 }

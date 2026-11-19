@@ -3,7 +3,7 @@ id: cr189-admin-org-api
 lát: cr189-admin-org-api
 cr: CR-189
 làn: đầy đủ
-migration: không
+migration: hub 0171 (số tự chọn, điều phối kiểm journal khi gộp)
 phụ thuộc: cr189-org-members-tab
 ---
 ## Plan (ngắn)
@@ -15,22 +15,24 @@ API quản trị cho sửa cơ cấu trực tiếp trên sơ đồ (BR-189-6, ch
 - [x] `org-dept.service.ts` (mới): `createDept`, `renameDept`, `deleteDept`. `org-dept.members.ts` (mới): `addDeptMembers`, `removeDeptMember` (+ `access {gained, lost}`).
 - [x] `org.service.ts` `setDepartment`: khoá công ty ĐẦU TIÊN (trước khoá hàng group — cùng thứ tự với các thao tác mới), bỏ nhánh `remove`, đổi phòng cha kiểm tên trùng cùng cấp.
 - [x] `org.routes.ts`: `POST /admin/org/departments`, `PUT …/:id/name`, `POST …/:id/members`, `DELETE …/:id/members/:userId`; `DELETE …/:id` đổi nghĩa (chặn khi còn người/phòng con).
+- [x] (soát Opus) hub `0171` hàm DEFINER `hub.org_group_refs` + `org.hub.ts`: xoá phòng giữ Group nếu còn agent/quy trình/việc duyệt, chặn khi việc duyệt đang mở (`DEPT_IN_USE`); `access` tính cả agent + quy trình; `exists` có `tenant_id`; `groupKeyOf` trần 1000 lần; ca N2.
 - [x] test int service + HTTP; sửa 2 test cũ có gọi `setDepartment(..., "remove")`.
 
 ## Không làm / Chạm
-Không UI (lát #5), không migration, không trigger DB cho «mỗi người một phòng» (Q5), không tự sửa người đang ở nhiều phòng.
+Không UI (lát #5), không trigger DB cho «mỗi người một phòng» (Q5), không tự sửa người đang ở nhiều phòng.
 Chạm: `apps/admin-api/src/modules/org/*`, `apps/admin-api/src/lib/errors.ts`, `packages/contracts/src/org.ts`.
 
 ## Test tối thiểu
 - int (evotest): `org-dept.service.int.test.ts`, `org-dept.routes.int.test.ts`, `org.service.int.test.ts`, `external-deny.int.test.ts`.
 
 ## Quyết định trong lúc làm
-- **Quyền theo nhóm (`feature_grants`)**: Group phòng ban VẪN mang quyền ⇒ chuyển người giữa phòng CÓ THỂ đổi quyền của họ (cộng/trừ quyền của nhóm cũ/mới; quyền còn từ nhóm khác hoặc cấp trực tiếp cho người thì không mất). Quyết định: không chặn (nghiệp vụ muốn chuyển phòng), nhưng MỖI lời gọi chuyển/bỏ trả `access {gained, lost}` (số cặp người×tính năng, tính trước khi ghi, một câu SQL tập hợp) để UI báo «đổi quyền». Quyền cấp trực tiếp cho người không bị đụng. `hub.agent_grants` theo nhóm chưa tính (ngoài `feature_grants`) — ghi vào Việc còn lại.
+- **Quyền theo nhóm (`feature_grants`)**: Group phòng ban VẪN mang quyền ⇒ chuyển người giữa phòng CÓ THỂ đổi quyền của họ (cộng/trừ quyền của nhóm cũ/mới; quyền còn từ nhóm khác hoặc cấp trực tiếp cho người thì không mất). Quyết định: không chặn (nghiệp vụ muốn chuyển phòng), nhưng MỖI lời gọi chuyển/bỏ trả `access {gained, lost}` (số cặp người×tính năng, tính trước khi ghi, một câu SQL tập hợp) để UI báo «đổi quyền». Quyền cấp trực tiếp cho người không bị đụng. `access` tính cả `hub.agent_grants` và `process_defs.run_group_ids` (cùng câu tập hợp).
 - «Mỗi người một phòng» ở service: thêm vào X ⇒ rời MỌI phòng ban khác (kể cả người vốn ở nhiều phòng); chỉ đụng `group_members` của Group có hàng `departments` (Group vai/beta/tuỳ ý giữ nguyên). Bỏ khỏi X ⇒ về phòng cha, phòng cấp trên cùng ⇒ về công ty; người vẫn ở phòng ban khác ⇒ không kéo thêm về cha.
 - Trưởng phòng: của phòng KHÁC ⇒ không thêm/chuyển được (409 `MEMBER_IS_HEAD` `{user_ids, group_ids}`); trưởng phòng của CHÍNH phòng ⇒ không bỏ được (409, đổi trưởng phòng trước). Đang là trưởng phòng đích thì thêm vào là ok.
 - Thứ tự khoá (một chỗ: `org.shared.ts`): advisory `org-dept:<tenant>` → groups theo id tăng (phòng đích + cha) → `group_members` theo (group, user) tăng → `config_meta`. `setDepartment` cũ khoá group TRƯỚC advisory ⇒ đảo lại để không deadlock với thao tác mới.
 - «Phòng gốc không xoá» = nút «Công ty» ảo của sơ đồ (không có bản ghi) ⇒ không có API xoá nó; phòng cấp trên cùng (cha null) vẫn xoá được nếu rỗng.
-- Xoá phòng rỗng: xoá cả Group; nếu Group còn `feature_grants`/vai gắn vào thì chỉ bỏ hàng phòng ban, Group + quyền giữ (không mất cấu hình quyền) — trả `{group_deleted}`. Đếm «còn người» = thành viên ∪ trưởng phòng.
+- Xoá phòng rỗng: xoá cả Group, TRỪ khi Group còn được dùng: `feature_grants`/vai (cùng công ty), `hub.agent_grants`, `run_group_ids`, từng được giao việc duyệt (đã đóng) ⇒ chỉ bỏ hàng phòng ban, trả `{group_deleted:false}`. Việc duyệt ĐANG MỞ giao cho nhóm ⇒ 409 `DEPT_IN_USE {open_reviews}`. Đếm «còn người» = thành viên ∪ trưởng phòng.
+- Hub: `admin_rw` không đọc `process_defs`/`review_tasks` ⇒ migration hub `0171_cr189_org_group_refs` (DEFINER, chỉ quản trị đúng công ty, nhóm ≤ 1000; vắng hàm ⇒ coi như không có tham chiếu). Số 0171 tự chọn (0170 mới nhất, 0169 vắng): điều phối kiểm journal.
 - Không thêm mã vào `API_ERRORS` (khoá 46): dùng `NAME_TAKEN` (tên trùng) có sẵn + khối mã riêng `ORG_DEPT_ERRORS` như `EXTERNAL_ORG_ERRORS`.
 - Tên phòng: trim, gộp khoảng trắng, ≤ 64; trùng không phân hoa/thường trong cùng phòng cha ⇒ 409 `NAME_TAKEN` (kiểm trong khoá công ty ⇒ không đua). Phòng cũ đã trùng tên sẵn không bị chặn trừ khi đổi tên/đổi cha.
 - Key Group tự sinh từ tên (bỏ dấu, thường, `-`, ≤ 24 ký tự + hậu tố `-2`…); không phụ thuộc người dùng nhập.
@@ -72,6 +74,28 @@ Xoá phòng bị chặn khi còn người (thành viên hoặc trưởng phòng)
 - Kịch bản: khi phòng rỗng thì xoá cả Group [test: apps/admin-api/src/modules/org/org-dept.service.int.test.ts » phòng rỗng ⇒ xoá cả Group, con rỗng xoá trước rồi cha xoá được, công ty khác ⇒ NOT_FOUND]
 - Kịch bản: khi Group còn quyền theo nhóm thì giữ Group và quyền [test: apps/admin-api/src/modules/org/org-dept.service.int.test.ts » Group còn quyền theo nhóm (feature_grants) ⇒ chỉ bỏ đánh dấu phòng ban, Group + quyền giữ nguyên]
 
+#### Yêu cầu: Xoá phòng không làm mất cấu hình Hub
+Group còn được dùng ở agent, quy trình hoặc từng được giao việc duyệt thì chỉ bỏ đánh dấu phòng ban, Group giữ nguyên; việc duyệt đang mở giao cho nhóm chặn xoá (409 `DEPT_IN_USE`). Tham chiếu của công ty khác không tính.
+- Kịch bản: khi Group có agent theo nhóm thì giữ Group [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » agent_grants theo nhóm ⇒ chỉ bỏ đánh dấu phòng ban, Group + quyền agent giữ]
+- Kịch bản: khi quy trình chạy được bởi nhóm thì giữ Group [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » quy trình có run_group_ids chứa nhóm ⇒ giữ Group]
+- Kịch bản: khi nhóm từng được giao việc duyệt đã đóng thì giữ Group [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » việc duyệt đã đóng từng giao cho nhóm (cả hai dạng) ⇒ giữ Group]
+- Kịch bản: khi việc duyệt đang mở giao cho nhóm thì 409 DEPT_IN_USE kèm số [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » việc duyệt ĐANG MỞ giao cho nhóm (assignee_group_id hoặc review_task_assignees) ⇒ 409 DEPT_IN_USE kèm số, không xoá gì]
+- Kịch bản: khi tham chiếu thuộc công ty khác thì vẫn xoá hẳn [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » tham chiếu của công ty khác không làm giữ Group, Group không dùng ở đâu ⇒ xoá hẳn]
+- Kịch bản: khi quản trị công ty khác gọi hàm tham chiếu thì 42501 [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » quản trị công ty khác gọi với id công ty này ⇒ 42501, đúng công ty ⇒ ok]
+
+#### Yêu cầu: access tính cả agent và quy trình
+Số quyền được thêm/mất khi chuyển người tính cả agent theo nhóm và quy trình chạy được theo nhóm.
+- Kịch bản: khi rời nhóm có agent và quy trình, đến nhóm có cùng agent thì chỉ mất quy trình [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » rời nhóm có agent X + quy trình P, đến nhóm có agent X ⇒ chỉ mất P, không còn nhóm nào ⇒ mất cả hai]
+- Kịch bản: khi vào nhóm có agent và quy trình thì được thêm cả hai [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » vào nhóm có agent + quy trình (2 người × 2 mục) ⇒ gained 4]
+
+#### Yêu cầu: Người được giao thêm, chuyển, bỏ người
+Quản trị khác người tạo dữ liệu thêm/chuyển/bỏ người; hàng và audit ghi đúng người thực hiện.
+- Kịch bản: khi quản trị khác người tạo chuyển và bỏ người thì hàng ghi đúng người thực hiện [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » binh thêm U1,U2 vào A, chi chuyển U1 sang B và bỏ U2 khỏi A (về cha), binh chuyển U2 lại, hàng ghi đúng người]
+
+#### Yêu cầu: Key Group sinh từ tên có trần
+Key sinh từ tên (bỏ dấu); trùng thì thêm hậu tố, quá 1000 lần thử thì KEY_TAKEN.
+- Kịch bản: khi tên trùng nhiều lần thì thêm hậu tố, quá 1000 lần thì KEY_TAKEN [test: apps/admin-api/src/modules/org/org.shared.test.ts » trùng ⇒ hậu tố -2, -3…, quá 1000 lần thử ⇒ KEY_TAKEN thay vì lặp mãi]
+
 #### Yêu cầu: Hai thao tác cơ cấu đồng thời không vỡ
 Mọi thao tác sửa cơ cấu khoá theo công ty trước, nên hai thao tác cùng lúc nối tiếp nhau, không deadlock, không vòng, không người ở hai phòng, không phòng mất mà còn thành viên.
 - Kịch bản: khi cùng một người thêm vào hai phòng cùng lúc thì cuối cùng đúng một phòng [test: apps/admin-api/src/modules/org/org-dept.service.int.test.ts » cùng một người thêm vào hai phòng cùng lúc ⇒ không lỗi, cuối cùng đúng một phòng]
@@ -90,6 +114,5 @@ Chỉ platform_admin (nêu công ty) và tenant_admin của công ty mình; nhâ
 
 ## Việc còn lại
 - Chạy `external-deny.int.test.ts` + toàn bộ file org trên evotest lần cuối (xem báo cáo). Chưa e2e (lát #5 viết, điều phối chạy cuối đợt).
-- `hub.agent_grants` theo nhóm (Agent Hub) chưa nằm trong `access {gained, lost}` — chỉ `feature_grants`; lát #5 báo tuỳ nhu cầu.
 - `admin-web` `DeptCard`/`api.ts` còn gọi `DELETE /admin/org/departments/:id` theo nghĩa cũ (gỡ đánh dấu) ⇒ nay 409 khi còn người/con; lát #5 thay UI. `e2e/contracts-web/org-visibility.cw.ts:134` bắt URL này — kiểm lại ở lát #5.
 - Seed demo `tools/scripts/src/seed-demo-partner.org.io.ts` gọi `PUT /admin/org/departments/:id` (giữ nguyên hành vi).

@@ -89,6 +89,8 @@ export const ORG_DEPT_ERRORS = {
   DEPT_NOT_EMPTY: 409,
   /** Người là trưởng phòng: thêm vào phòng khác / bỏ khỏi chính phòng mình phải đổi trưởng phòng trước. `details = { user_ids, group_ids }`. */
   MEMBER_IS_HEAD: 409,
+  /** Xoá phòng khi nhóm đang được giao việc duyệt ĐANG MỞ (Hub). `details = { open_reviews }`. */
+  DEPT_IN_USE: 409,
 } as const satisfies Record<string, 409>;
 export type OrgDeptErrorCode = keyof typeof ORG_DEPT_ERRORS;
 
@@ -119,7 +121,7 @@ export const DeptRenameResponseSchema = z.strictObject({
 export type DeptRenameResponse = z.infer<typeof DeptRenameResponseSchema>;
 
 /**
- * Quyền theo nhóm đổi khi chuyển người: số cặp (người, tính năng) mất / được thêm do `feature_grants` của các nhóm
+ * Quyền theo nhóm đổi khi chuyển người: số cặp (người, mục) mất / được thêm — mục = tính năng (`feature_grants`), agent (`hub.agent_grants`), quy trình chạy được (`run_group_ids`) — của các nhóm
  * (phòng) rời đi / đến. Cấp trực tiếp cho người không đổi. 0/0 = không đổi quyền.
  */
 export const OrgAccessChangeSchema = z.strictObject({
