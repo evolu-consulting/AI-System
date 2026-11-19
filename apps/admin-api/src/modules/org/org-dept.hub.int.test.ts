@@ -136,6 +136,30 @@ describe("CR-189 · xoá phòng khi Group còn được Hub dùng", () => {
   });
 });
 
+describe("CR-189 · fail-closed khi không gọi được hàm tham chiếu Hub", () => {
+  test("có bảng Hub nhưng hàm hub.org_group_refs không cấp cho admin_rw ⇒ xoá phòng báo lỗi, KHÔNG xoá Group, phòng còn nguyên", async () => {
+    const a = await mk("A");
+    await agentGrant(TID, a);
+    await owner`revoke execute on function hub.org_group_refs(uuid, uuid[]) from admin_rw`;
+    try {
+      const e = await err(deleteDept(assignee, undefined, a));
+      expect(e.code).toBe("INTERNAL_ERROR");
+      expect(e.details).toEqual({ reason: "hub_refs_unavailable" });
+      expect(await n(owner`select count(*)::int as n from admin.groups where id = ${a}`)).toBe(1);
+      expect(
+        await n(owner`select count(*)::int as n from admin.departments where group_id = ${a}`),
+      ).toBe(1);
+      // chuyển người vẫn chạy (access chỉ báo), chỉ thiếu phần Hub
+      expect((await addDeptMembers(assignee, undefined, a, { user_ids: [U1] })).added).toEqual([
+        U1,
+      ]);
+    } finally {
+      await owner`grant execute on function hub.org_group_refs(uuid, uuid[]) to admin_rw`;
+    }
+    expect(await deleteDept(assignee, undefined, await mk("B"))).toEqual({ group_deleted: true });
+  });
+});
+
 describe("CR-189 · access {gained, lost} tính cả agent + quy trình", () => {
   test("rời nhóm có agent X + quy trình P, đến nhóm có agent X ⇒ chỉ mất P, không còn nhóm nào ⇒ mất cả hai", async () => {
     const a = await mk("A");

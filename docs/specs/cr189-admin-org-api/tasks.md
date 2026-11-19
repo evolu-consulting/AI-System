@@ -32,6 +32,8 @@ Chạm: `apps/admin-api/src/modules/org/*`, `apps/admin-api/src/lib/errors.ts`, 
 - Thứ tự khoá (một chỗ: `org.shared.ts`): advisory `org-dept:<tenant>` → groups theo id tăng (phòng đích + cha) → `group_members` theo (group, user) tăng → `config_meta`. `setDepartment` cũ khoá group TRƯỚC advisory ⇒ đảo lại để không deadlock với thao tác mới.
 - «Phòng gốc không xoá» = nút «Công ty» ảo của sơ đồ (không có bản ghi) ⇒ không có API xoá nó; phòng cấp trên cùng (cha null) vẫn xoá được nếu rỗng.
 - Xoá phòng rỗng: xoá cả Group, TRỪ khi Group còn được dùng: `feature_grants`/vai (cùng công ty), `hub.agent_grants`, `run_group_ids`, từng được giao việc duyệt (đã đóng) ⇒ chỉ bỏ hàng phòng ban, trả `{group_deleted:false}`. Việc duyệt ĐANG MỞ giao cho nhóm ⇒ 409 `DEPT_IN_USE {open_reviews}`. Đếm «còn người» = thành viên ∪ trưởng phòng.
+- Fail-closed (soát vòng 2): có bảng Hub mà hàm `hub.org_group_refs` không gọi được ⇒ xoá phòng ném `INTERNAL_ERROR` `{reason:"hub_refs_unavailable"}`, KHÔNG xoá Group; DB không có Hub ⇒ không có tham chiếu. Tính `access` chỉ báo nên khi hàm không gọi được thì bỏ phần Hub, không chặn chuyển người.
+- Hàm `org_group_refs` trả cả `item_id` (id agent/quy trình/việc duyệt) — chấp nhận: `accessDelta` cần phân biệt từng mục để không đếm trùng; chỉ id, chỉ đúng công ty của quản trị.
 - Hub: `admin_rw` không đọc `process_defs`/`review_tasks` ⇒ migration hub `0172_cr189_org_group_refs` (DEFINER, chỉ quản trị đúng công ty, nhóm ≤ 1000; vắng hàm ⇒ coi như không có tham chiếu). Số 0172 do điều phối giao (sổ `docs/specs/CR-187/migrations.md`).
 - Không thêm mã vào `API_ERRORS` (khoá 46): dùng `NAME_TAKEN` (tên trùng) có sẵn + khối mã riêng `ORG_DEPT_ERRORS` như `EXTERNAL_ORG_ERRORS`.
 - Tên phòng: trim, gộp khoảng trắng, ≤ 64; trùng không phân hoa/thường trong cùng phòng cha ⇒ 409 `NAME_TAKEN` (kiểm trong khoá công ty ⇒ không đua). Phòng cũ đã trùng tên sẵn không bị chặn trừ khi đổi tên/đổi cha.
@@ -82,6 +84,10 @@ Group còn được dùng ở agent, quy trình hoặc từng được giao vi�
 - Kịch bản: khi việc duyệt đang mở giao cho nhóm thì 409 DEPT_IN_USE kèm số [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » việc duyệt ĐANG MỞ giao cho nhóm (assignee_group_id hoặc review_task_assignees) ⇒ 409 DEPT_IN_USE kèm số, không xoá gì]
 - Kịch bản: khi tham chiếu thuộc công ty khác thì vẫn xoá hẳn [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » tham chiếu của công ty khác không làm giữ Group, Group không dùng ở đâu ⇒ xoá hẳn]
 - Kịch bản: khi quản trị công ty khác gọi hàm tham chiếu thì 42501 [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » quản trị công ty khác gọi với id công ty này ⇒ 42501, đúng công ty ⇒ ok]
+
+#### Yêu cầu: Xoá phòng báo lỗi khi không đọc được tham chiếu Hub
+Có bảng Hub mà hàm tham chiếu không gọi được thì xoá phòng báo lỗi (INTERNAL_ERROR, hub_refs_unavailable), không xoá Group; chuyển người vẫn chạy.
+- Kịch bản: khi hàm hub.org_group_refs không cấp cho admin_rw thì xoá phòng báo lỗi và Group còn nguyên [test: apps/admin-api/src/modules/org/org-dept.hub.int.test.ts » có bảng Hub nhưng hàm hub.org_group_refs không cấp cho admin_rw ⇒ xoá phòng báo lỗi, KHÔNG xoá Group, phòng còn nguyên]
 
 #### Yêu cầu: access tính cả agent và quy trình
 Số quyền được thêm/mất khi chuyển người tính cả agent theo nhóm và quy trình chạy được theo nhóm.
