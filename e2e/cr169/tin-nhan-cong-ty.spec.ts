@@ -368,11 +368,9 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
 
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages?company=all");
-  await expect(v.page.getByTestId("dir-list")).toBeVisible(); // hết kết nối ⇒ hết nhóm công ty ở cột trái
-  await expect(
-    v.page.getByTestId("dir-group-head").filter({ hasText: new RegExp(CO.b.name) }),
-  ).toHaveCount(0);
-  await openConv(v.page, NAME.ha); // cuộc cũ vẫn nằm ở «Tất cả»
+  await expect(v.page.getByTestId("dir-list")).toBeVisible();
+  // CR-190 (soát Opus cr190-msg-directory-api): công ty đã ngắt vẫn còn nhóm để giữ lịch sử cuộc cũ — chỉ đọc, không có người mới để nhắn
+  await openConv(v.page, NAME.ha);
   await expect(msgOf(v.page, HELLO)).toBeVisible();
   await expect(msgOf(v.page, REPLY)).toBeVisible();
   await expect(v.page.getByTestId("read-only-notice")).toContainText("không còn kết nối");
