@@ -2,8 +2,9 @@
 import type { MsgCompany, MsgDirPerson } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { isOpen, type OpenMap } from "../lib/collapse";
+import { freezeDefaults, isOpen, type OpenMap } from "../lib/collapse";
 import type { DirData } from "../lib/directory";
 import { DirGroup } from "./DirGroup";
 import type { RowMenuHandlers } from "./RowMenu";
@@ -27,6 +28,8 @@ export type DirectoryViewProps = {
 
 export function DirectoryView(p: DirectoryViewProps) {
   const { t } = useTranslation();
+  const initial = useRef<Record<string, boolean>>({});
+  initial.current = freezeDefaults(initial.current, p.data.groups);
   if (p.searching && p.data.groups.length === 0)
     return (
       <EmptyState
@@ -38,7 +41,9 @@ export function DirectoryView(p: DirectoryViewProps) {
   return (
     <div data-testid="dir-list">
       {p.data.groups.map((g) => {
-        const open = p.searching || isOpen(p.open, g.key, g.unread);
+        const hasSel =
+          p.activeId !== null && g.items.some((r) => r.conversation?.id === p.activeId);
+        const open = p.searching || isOpen(p.open, g.key, initial.current[g.key], hasSel);
         return (
           <DirGroup
             key={g.key}
