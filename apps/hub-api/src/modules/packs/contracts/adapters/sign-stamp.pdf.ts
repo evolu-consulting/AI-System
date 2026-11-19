@@ -33,6 +33,7 @@ const CAPTION_SIZE = 7.5;
 /** Co chữ cho vừa bề ngang khung chỗ ký, không nhỏ hơn mức này (dưới nữa thì cắt «…»). */
 const CAPTION_MIN_SIZE = 5;
 const LINE_GAP = 1.5;
+const MIN_TEXT_Y = 4;
 const INK = {
   blue: { hex: "#1f3a8a", rgb: [0.12, 0.23, 0.54] },
   black: { hex: "#1a1a1a", rgb: [0.1, 0.1, 0.1] },
@@ -137,20 +138,46 @@ function drawPart(
   });
   page.pushOperators(popGraphicsState());
   if (lines) {
-    let y = q.frame.y - 9;
-    for (const raw of lines.texts) {
-      const { text, size } = fitLine(lines.font, raw, q.frame.w);
-      page.drawText(text, {
+    const fit = lines.texts.map((t) => fitLine(lines.font, t, q.frame.w));
+    const { from, ys } = layoutLines(
+      q.frame.y,
+      fit.map((f) => f.size),
+    );
+    ys.forEach((y, i) => {
+      const f = fit[from + i] as { text: string; size: number };
+      page.drawText(f.text, {
         x: q.frame.x,
-        y: Math.max(4, y),
-        size,
+        y,
+        size: f.size,
         font: lines.font,
         color: rgb(c.ink.rgb[0], c.ink.rgb[1], c.ink.rgb[2]),
       });
-      y -= size + LINE_GAP;
-    }
+    });
   }
   page.pushOperators(popGraphicsState());
+}
+
+/** Dòng chữ nào đặt ở đâu dưới khung (y tăng lên trên): không dòng nào thấp hơn MIN_TEXT_Y, các dòng không đè nhau.
+ *  Thiếu chỗ ⇒ bỏ dòng ĐẦU (caption) và giữ dòng CUỐI («Ký ngày …»); dòng cuối còn lại kẹp sát đáy. */
+export function layoutLines(
+  frameY: number,
+  sizes: readonly number[],
+): { from: number; ys: number[] } {
+  const place = (from: number) => {
+    const ys: number[] = [];
+    let y = frameY - 9;
+    for (const sz of sizes.slice(from)) {
+      ys.push(y);
+      y -= sz + LINE_GAP;
+    }
+    return ys;
+  };
+  for (let from = 0; from < sizes.length - 1; from++) {
+    const ys = place(from);
+    if ((ys.at(-1) as number) >= MIN_TEXT_Y) return { from, ys };
+  }
+  const from = Math.max(0, sizes.length - 1);
+  return { from, ys: place(from).map((y) => Math.max(MIN_TEXT_Y, y)) };
 }
 
 /** Một dòng chữ vừa khung: co cỡ chữ tới CAPTION_MIN_SIZE, vẫn dài hơn thì cắt bớt và thêm «…». */
@@ -190,12 +217,13 @@ export async function stampPdf(i: StampInput): Promise<StampResult> {
       img = await doc.embedPng(await tint(m.png, c.ink.hex));
       images.set(key, img);
     }
-    // Dòng chữ dưới khung: chỉ khi chữ ký nằm gọn một trang (giáp lai không có).
-    const texts =
-      m.parts.length === 1 ? [m.caption, m.signedOn].flatMap((x) => (x ? [x] : [])) : [];
+    // Dòng chữ dưới khung: dấu một phần ⇒ dưới phần đó; dấu nhiều phần (giáp lai/xoè quạt) ⇒ chỉ dưới PHẦN CUỐI (BR-188-2: «Ký ngày …» luôn in).
+    const texts = [m.caption, m.signedOn].flatMap((x) => (x ? [x] : []));
     if (texts.length > 0) font ??= await loadCaptionFont(doc);
-    for (const q of parts)
-      drawPart(c, img, q, texts.length > 0 && font ? { texts, font } : undefined);
+    for (const [i, q] of parts.entries()) {
+      const last = i === parts.length - 1 && texts.length > 0 && font;
+      drawPart(c, img, q, last ? { texts, font } : undefined);
+    }
   }
   const bytes = await doc.save();
   return { bytes, sha256: sha256Hex(bytes), pages: pages.length };

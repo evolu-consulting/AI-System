@@ -11,7 +11,7 @@ import {
   PDFRawStream,
 } from "pdf-lib";
 import { SignError } from "../domain/sign-error";
-import { fitLine, sha256Hex, stampPdf, tint } from "./sign-stamp.pdf";
+import { fitLine, layoutLines, sha256Hex, stampPdf, tint } from "./sign-stamp.pdf";
 
 /** PNG nét đen trên nền trong (vạch chéo) — mô phỏng ảnh chữ ký đã cắt sát. */
 function sigPng(w = 240, h = 100): Uint8Array {
@@ -198,7 +198,7 @@ describe("stampPdf", () => {
     expect(img0.size[0]).toBeCloseTo(img1.size[0] as number, 6); // cùng cỡ ảnh
     expect((img0.at[4] as number) - (img1.at[4] as number)).toBeCloseTo(600, 6); // lệch đúng một rộng trang ⇒ liền một hình
     expect(images(d)).toBe(1);
-    expect(hasFont(d, /BeVietnamPro/)).toBe(false); // giáp lai ⇒ không có dòng chữ dưới
+    expect(hasFont(d, /BeVietnamPro/)).toBe(true); // CR-188 · giáp lai cũng in dòng chữ (ở phần cuối)
   });
 
   test("phần ngoài trang bị cắt: clip chỉ còn phần trong trang", async () => {
@@ -234,15 +234,15 @@ describe("stampPdf", () => {
     expect(images(d)).toBe(1);
   });
 
-  test("CR-188 · dấu một phần in HAI dòng (caption + «Ký ngày …»); thiếu caption vẫn in dòng ngày; giáp lai không in", async () => {
-    const tj = async (m: { caption?: string; signedOn?: string; parts?: SignPart[] }) => {
+  test("CR-188 · dấu một phần in HAI dòng (caption + «Ký ngày …»); thiếu caption vẫn in dòng ngày", async () => {
+    const tj = async (m: { caption?: string; signedOn?: string; parts?: SignPart[] }, page = 0) => {
       const r = await stampPdf({
         pdf: await makePdf(2),
         marks: [{ png: sigPng(), parts: m.parts ?? [part()], ...m }],
         ink: "blue",
       });
       // mỗi dòng chữ = một khối BT…ET (trừ khối chữ sẵn có của trang mẫu)
-      return content(await PDFDocument.load(r.bytes), 0).split(/\sBT\s/).length - 1;
+      return content(await PDFDocument.load(r.bytes), page).split(/\sBT\s/).length - 1;
     };
     const base = await tj({});
     const on = "Ký ngày 18/11/2026 00:05";
@@ -251,13 +251,39 @@ describe("stampPdf", () => {
     );
     expect(await tj({ signedOn: on })).toBe(base + 1);
     expect(await tj({ caption: "A" })).toBe(base + 1);
-    expect(
-      await tj({
-        signedOn: on,
-        caption: "A",
-        parts: [part({ page: 0 }), part({ page: 1 })],
-      }),
-    ).toBe(base);
+    // Khung sát đáy trang: không đủ chỗ cho hai dòng ⇒ bỏ caption, giữ dòng ngày (BR-188-2).
+    expect(await tj({ caption: "A", signedOn: on, parts: [part({ y: 6, cy: 6 })] })).toBe(base + 1);
+  });
+
+  test("CR-188 · dấu nhiều phần (giáp lai/xoè quạt): «Ký ngày …» + caption in ở PHẦN CUỐI, các phần trước không in", async () => {
+    const parts = [
+      part({ page: 0, x: 500, y: 300, w: 190, h: 100, cx: 500, cy: 300, cw: 100, ch: 100 }),
+      part({ page: 1, x: -100, y: 300, w: 190, h: 100, cx: 0, cy: 300, cw: 90, ch: 100 }),
+    ];
+    const mk = async (m: { caption?: string; signedOn?: string }) => {
+      const r = await stampPdf({
+        pdf: await makePdf(2),
+        marks: [{ png: sigPng(), parts, ...m }],
+        ink: "blue",
+      });
+      const d = await PDFDocument.load(r.bytes);
+      const n = (i: number) => content(d, i).split(/\sBT\s/).length - 1;
+      return [n(0), n(1)];
+    };
+    const [b0, b1] = await mk({});
+    const on = "Ký ngày 18/11/2026 00:05";
+    expect(await mk({ caption: "A · B", signedOn: on })).toEqual([b0, (b1 as number) + 2]);
+    expect(await mk({ signedOn: on })).toEqual([b0, (b1 as number) + 1]);
+  });
+
+  test("CR-188 · layoutLines: đủ chỗ giữ cả hai dòng, không đè nhau; thiếu chỗ bỏ dòng đầu giữ dòng cuối", () => {
+    const ok = layoutLines(100, [7.5, 7.5]);
+    expect(ok.from).toBe(0);
+    expect(ok.ys).toEqual([91, 82]);
+    const tight = layoutLines(8, [7.5, 7.5]); // dòng 2 sẽ ở y < 4
+    expect(tight.from).toBe(1);
+    expect(tight.ys).toHaveLength(1);
+    expect(layoutLines(0, [7.5]).ys).toEqual([4]); // một dòng: kẹp sát đáy
   });
 
   test("CR-188 · fitLine: vừa khung giữ cỡ 7,5; dài thì co tới 5 rồi cắt «…»", () => {

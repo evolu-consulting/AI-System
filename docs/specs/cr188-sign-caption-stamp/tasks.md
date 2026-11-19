@@ -28,7 +28,7 @@ unit `sign.rules.test.ts` (signedOnLine), `sign-stamp.pdf.test.ts`, `signature.r
 - Cả 6 phông đủ glyph tiếng Việt (kiểm bảng cmap của tệp): Great Vibes và Allura CÓ đủ ⇒ giữ nguyên danh sách spec, không thay.
 - `sig_create` chuẩn hoá caption ở DB (cắt khoảng trắng, rỗng ⇒ NULL, > 200 ⇒ 22023); người dùng xoá trắng ô ⇒ null ⇒ dựng từ hồ sơ lúc ký (không có cách «không in dòng tên» — spec không đòi).
 - Cờ `caption` của từng dấu trong body ký giữ ở contract (tương thích) nhưng máy chủ bỏ qua; web luôn gửi `true`. `sign_marks.caption` nay luôn lưu dòng caption đã in.
-- Dấu giáp lai/nhiều phần không in dòng chữ (như cũ — không có chỗ); dấu một phần luôn in cả hai dòng. Dòng dài co chữ tới 5 pt rồi cắt «…».
+- Dấu một phần in cả hai dòng dưới khung; dấu nhiều phần (giáp lai/xoè quạt) in dòng chữ dưới PHẦN CUỐI (soát Opus #1). Khung sát đáy trang không đủ chỗ ⇒ bỏ dòng caption, giữ «Ký ngày …» (soát Opus #2). Dòng dài co chữ tới 5 pt rồi cắt «…».
 - Đối tác (ký nhanh, không hồ sơ): dòng dưới = tên người ký/đối tác + «Ký ngày …».
 - Bản chữ ký cũ (trước 0161) caption = NULL, không backfill ghi đè ⇒ dựng từ hồ sơ lúc ký.
 - Dòng dưới của «chữ ký tắt» (initials) không có ô nhập; dùng hồ sơ lúc ký khi in.
@@ -40,7 +40,8 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Dấu ký trên tài liệu
 Dấu ký in chữ ký + dòng «Họ tên · Chức vụ · Phòng ban» (bản lưu theo phiên bản chữ ký; chưa lưu thì dựng từ hồ sơ lúc ký) + dòng riêng «Ký ngày dd/mm/yyyy hh:mm» theo giờ Việt Nam, giờ máy chủ, LUÔN in; công ty không còn tuỳ chọn tắt ngày.
 - Kịch bản: khi ký thì dấu luôn có dòng «Ký ngày …» giờ VN [test: apps/hub-api/src/modules/packs/contracts/domain/sign.rules.test.ts » signedOnLine (BR-188-2)]
-- Kịch bản: khi dấu một phần thì in hai dòng và co chữ cho vừa khung [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu một phần in HAI dòng (caption + «Ký ngày …»); thiếu caption vẫn in dòng ngày; giáp lai không in]
+- Kịch bản: khi dấu một phần thì in hai dòng và co chữ cho vừa khung [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu một phần in HAI dòng (caption + «Ký ngày …»); thiếu caption vẫn in dòng ngày]
+- Kịch bản: khi dấu nhiều phần thì «Ký ngày …» in ở phần cuối [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu nhiều phần (giáp lai/xoè quạt): «Ký ngày …» + caption in ở PHẦN CUỐI, các phần trước không in]
 - Kịch bản: khi lưu ký thì dòng caption đã lưu được in và ghi vào dấu [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » N2: người có lượt KHÁC người tạo HĐ Lưu được, dấu mang user_signature_id = chữ ký đang dùng (K3), ô đã ký, còn ô ⇒ my_open_fields_left > 0]
 
 ### MODIFIED hub/chu-ky-noi-bo.md
