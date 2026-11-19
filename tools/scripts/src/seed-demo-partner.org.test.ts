@@ -171,3 +171,12 @@ describe("thân gửi lên API admin hợp lệ theo zod của @ai/contracts", (
     );
   });
 });
+
+describe("CR-189 · cấp quản lý chỉ trưởng phòng", () => {
+  it("Giám đốc không là trưởng phòng nào (phòng gốc đã có trưởng phòng khác) ⇒ báo lỗi rõ, không chết giữa chừng ở 400", () => {
+    const s = base();
+    const depts = new Map(s.depts);
+    depts.set(ORG_ROOT, { head: "someone.else", parent: null });
+    expect(() => planOrg({ ...s, depts })).toThrow(/chưa là trưởng phòng/);
+  });
+});

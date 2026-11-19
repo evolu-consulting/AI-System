@@ -132,6 +132,13 @@ export function planOrg(s: OrgState): { actions: OrgAction[]; missingPackGroups:
     ...deptActions(s),
     ...personActions(s),
   ];
+  // CR-189: cấp quản lý chỉ nhận trưởng phòng ⇒ Giám đốc phải là trưởng phòng (đã có, hoặc sắp được đặt ở phòng gốc) trước khi gán quản lý.
+  const directorIsHead =
+    [...s.depts.values()].some((d) => d.head === ORG_DIRECTOR) || !s.depts.has(ORG_ROOT);
+  if (!directorIsHead && actions.some((x) => x.op === "set_manager"))
+    throw new Error(
+      `${ORG_DIRECTOR} chưa là trưởng phòng nào (phòng ${ORG_ROOT} đã có trưởng phòng khác) — cấp quản lý chỉ gán cho trưởng phòng; đặt ${ORG_DIRECTOR} làm trưởng phòng rồi chạy lại`,
+    );
   return { actions, missingPackGroups: Object.values(PACK_GROUP).filter((k) => !s.groups.has(k)) };
 }
 

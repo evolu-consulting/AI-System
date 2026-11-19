@@ -2,15 +2,12 @@
 // lý mỗi người, phòng ban (chỉnh ở admin qua «Chỉnh sơ đồ»). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
-import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
-import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EditChartButton } from "~/features/org-chart/components/EditChartButton";
 import { Pager } from "~/features/table";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
-import { PersonPick } from "~/shared/ui/PersonPick";
 import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import {
   fetchOrg,
@@ -21,8 +18,8 @@ import {
   putVisibility,
   setManager,
 } from "../api";
+import { ManagerCell, NameCell } from "../components/MemberCells";
 import { OrgTabs } from "../components/OrgTabs";
-import { headCandidates, managerNotHead, suggestedHeadOf } from "../lib/org";
 
 export function OrgPage() {
   const { t } = useTranslation();
@@ -88,57 +85,15 @@ export function OrgPage() {
   const rows = org.data?.items ?? [];
   const total = org.data?.total ?? 0;
 
-  const managerCell = (m: (typeof rows)[number]) => {
-    const org = full.data;
-    const sug = org ? suggestedHeadOf(org.departments, m.user_id) : null;
-    const sugName = sug ? org?.members.find((x) => x.user_id === sug)?.display_name : undefined;
-    return (
-      <div className="flex flex-col items-start gap-1">
-        <PersonPick
-          source={`org-heads:${m.user_id}`}
-          fetchPage={async (q) => ({
-            items: org ? headCandidates(org, m.user_id, q) : [],
-            next: null,
-          })}
-          value={m.manager_id ?? ""}
-          valueName={m.manager_name ?? undefined}
-          clearable
-          placeholder={t("contracts.org.managerPlaceholder")}
-          ariaLabel={`${t("contracts.org.manager")} · ${m.display_name}`}
-          onChange={(id) => act(() => setManager(m.user_id, id || null))}
-        />
-        {org && m.manager_id && managerNotHead(org, m.manager_id) && (
-          <span
-            data-testid="manager-not-head"
-            className="rounded-md bg-warning-bg px-2 py-0.5 text-caption font-semibold text-warning"
-          >
-            {t("contracts.org.notHead")}
-          </span>
-        )}
-        {sug && sugName && !m.manager_id && (
-          <button
-            type="button"
-            data-testid="manager-suggest"
-            disabled={run.isPending}
-            className="text-caption text-act underline"
-            onClick={() => act(() => setManager(m.user_id, sug))}
-          >
-            {t("contracts.org.suggest", { name: sugName })}
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  const nameCell = (m: (typeof rows)[number]) => (
-    <span className="flex min-w-0 items-center gap-2">
-      <PersonAvatar name={m.display_name} id={m.user_id} size={32} interactive={false} />
-      <span className="min-w-0">
-        <TruncText text={m.display_name} className="block font-medium" />
-        <TruncText text={m.job_title || m.username} className="block text-sm text-dim" />
-      </span>
-    </span>
+  const managerCell = (m: (typeof rows)[number]) => (
+    <ManagerCell
+      m={m}
+      org={full.data}
+      pending={run.isPending}
+      onSet={(id) => act(() => setManager(m.user_id, id))}
+    />
   );
+  const nameCell = (m: (typeof rows)[number]) => <NameCell m={m} />;
 
   return (
     <section className="flex flex-col gap-5 max-sm:pb-24">

@@ -124,7 +124,7 @@ export function setManager(
       // Gán lại đúng người đang là quản lý = không đổi ⇒ không kiểm (dữ liệu cũ giữ).
       if (u[0].manager_id !== input.manager_id) {
         const head = (await tx.execute(sql`select 1 from admin.departments
-          where tenant_id = ${t}::uuid and head_user_id = ${input.manager_id}::uuid limit 1`)) as unknown as unknown[];
+          where tenant_id = ${t}::uuid and head_user_id = ${input.manager_id}::uuid limit 1 for share`)) as unknown as unknown[];
         if (head.length === 0) throw appError("VALIDATION_ERROR", { reason: "manager_not_head" });
       }
     }
