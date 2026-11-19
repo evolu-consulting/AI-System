@@ -38,3 +38,4 @@ Tổng: Cao 2, Trung 6, Thấp 5 (hai dòng «Đạt» không tính).
 - Đối chiếu bố cục với `prototype.html` của từng CR chưa làm bằng cách mở HTML; chỉ đối chiếu theo mô tả trong `nghiep-vu.md`.
 - Ảnh lỗi `.data/evotest/20261120-011204-8032-e2e` là lần chạy cũ hơn các commit baseline mới nhất (`5c2fa224f`), có thể đã được sửa; cần chụp lại sau lần chạy tiếp theo.
 | Hồ sơ (mở hộp thoại) | Mở hộp thoại (Radix khoá cuộn) làm nội dung nhích ~18px ngang — trái Luật cuộn (5) scrollbar-gutter | Thấp | e2e cr192-crop C1 | Áp scrollbar-gutter cho vùng cuộn chính/không bỏ thanh cuộn khi khoá |
+| Thanh trên điện thoại (chế độ «xem như») | Thẻ cam «xem như … (Nguyễn Văn An)» bị ép, đè các icon thanh trên ở 390px — CÓ TỪ TRƯỚC đợt (baseline prod 74aa559d7) | Thấp | bang-tin-mobile.png | Thu gọn thẻ thành icon + tooltip trên điện thoại |
