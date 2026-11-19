@@ -18,6 +18,8 @@ export type ConnectedRow = {
   file_count: number;
   author_name: string;
   author_title: string | null;
+  /** CR-191 BR-191-13 · mã người đăng (hàm 0031) ⇒ web lấy ảnh qua `GET /people?ids=`; hàm chỉ chạy cho người xem nội bộ. */
+  author_user_id: string;
 };
 
 export type ConnectedFilter = {
@@ -33,7 +35,7 @@ export async function connectedQuery(tx: Tx, f: ConnectedFilter): Promise<Connec
   const rows = await tx.execute<Omit<ConnectedRow, "fields"> & { fields: unknown }>(sql`
     select id::text, tenant_id::text, company_name, type, title_masked as title, body_masked as body, fields_masked as fields,
       cats, edited, to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as created_at, file_count,
-      author_name, author_title
+      author_name, author_title, author_user_id::text as author_user_id
     from community.feed_connected(${f.cursor?.at ?? null}::timestamptz, ${f.cursor?.id ?? null}::uuid, ${f.take}::int,
       ${f.type}::text, ${f.source}::uuid)`);
   return rows.map((r) => ({

@@ -98,6 +98,7 @@ export function connectedView(r: ConnectedRow): PostView {
     authorOrgId: r.tenant_id,
     authorOrgName: r.company_name,
     authorName: r.author_name,
+    authorUserId: r.author_user_id,
     authorSide: "partner",
     ...(r.author_title ? { authorTitle: r.author_title } : {}),
     source: "connected",

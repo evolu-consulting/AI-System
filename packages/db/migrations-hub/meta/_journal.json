@@ -1039,6 +1039,20 @@
       "breakpoints": true
     },
     {
+      "idx": 148,
+      "version": "7",
+      "when": 1806904300000,
+      "tag": "0168_cr191_partner_connect",
+      "breakpoints": true
+    },
+    {
+      "idx": 149,
+      "version": "7",
+      "when": 1806904500000,
+      "tag": "0170_cr191_cc_listing",
+      "breakpoints": true
+    },
+    {
       "idx": 150,
       "version": "7",
       "when": 1806904600000,
@@ -1046,7 +1060,7 @@
       "breakpoints": true
     },
     {
-      "idx": 150,
+      "idx": 151,
       "version": "7",
       "when": 1806904700000,
       "tag": "0172_cr189_org_group_refs",

@@ -248,6 +248,7 @@ describe("CR-191 · bảng tin gộp: bài công ty đã kết nối (feed_conne
       [
         "author_name",
         "author_title",
+        "author_user_id",
         "body_masked",
         "cats",
         "company_name",
@@ -380,6 +381,7 @@ describe("CR-191 · bảng tin gộp: bài công ty đã kết nối (feed_conne
       "connected:all_old",
     ]);
     const v = connectedView(out.connected[0] as (typeof out.connected)[number]);
+    expect(v.authorUserId).toBe(POSTER); // BR-191-13: mã người đăng để lấy ảnh thật (người xem nội bộ)
     expect([v.source, v.authorOrgName, v.authorTitle, v.fileCount, v.actions]).toEqual([
       "connected",
       "Công ty A Đăng",

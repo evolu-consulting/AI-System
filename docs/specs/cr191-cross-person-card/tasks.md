@@ -3,7 +3,7 @@ id: cr191-cross-person-card
 lát: cr191-cross-person-card
 cr: CR-191
 làn: đầy đủ
-migration: hub 0171
+migration: hub 0171, pack-community 0031
 phụ thuộc: cr191-feed-merge-rls
 ---
 ## Plan (ngắn)
@@ -12,11 +12,13 @@ Thẻ người CHÉO công ty (BR-191-13): hàm DEFINER `hub.cc_person_cards(uui
 ## Làm
 - [x] Hub `0171_cr191_cc_person_cards` (DEFINER, GRANT chỉ `hub_rw`, journal idx sau 0170) — người gọi lấy từ GUC; người gọi external ⇒ rỗng; không raise cho id ngoài phạm vi.
 - [x] `people.repo.cardsOf`: nối `hub.cc_person_cards` (một câu); người gọi external theo token ⇒ không nối. Contract `PersonCard.company_name?` (chỉ thẻ chéo).
+- [x] Community `0031_cr191_feed_connected_author` (DROP + CREATE `community.feed_connected`, CHỈ thêm cột `author_user_id`, giữ mọi hàng rào 0026) + `ConnectedRow`/`connectedView.authorUserId` ⇒ ảnh tác giả bài «Đối tác».
+- [x] Web: `MentionPicker` (ảnh thẻ người), `OrgPage` bảng + danh sách điện thoại `org-member-cards` (`NameCell src`).
 - [x] Contract `PostView.authorUserId?` (chỉ người xem nội bộ) + `views.postView`.
 - [x] Web: `community/application/use-people-cards.ts` + `Feed` → `PostCard avatar`; danh bạ Tin nhắn (`DirGroup`/`ConversationRow`, đầu khung chat) đã nhận `card.avatar` từ `usePersonCards` ⇒ tự có ảnh chéo công ty (không sửa code); sơ đồ tổ chức `OrgChartBody` → `OrgChartPerson.avatar` (trưởng phòng + hàng avatar).
 
 ## Không làm / Chạm
-- Không làm: «@» (`MentionPicker`, chưa nối ảnh); ảnh tác giả bài ĐỐI TÁC (`feed_connected` chưa trả `author_user_id` — cần migration pack-community, xem Việc còn lại); bình luận chéo.
+- Không làm: bình luận chéo (lát `cr191-cross-comment`).
 - Chạm: `packages/db/migrations-hub/0171*`, `apps/hub-api/src/modules/people/*`, `packages/contracts/src/{people,pack-community/post}.ts`, `…/community/adapters/views.ts`, web (community Feed/PostCard, workspace-web org-chart, flow-canvas OrgChart).
 
 ## Test tối thiểu
@@ -45,13 +47,17 @@ Người nội bộ xem được họ tên, chức vụ, ảnh đại diện và
 - Kịch bản: khi đọc thẻ chéo công ty thì không có email hoặc điện thoại [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » chỉ trả họ tên, chức vụ, ảnh, tên công ty — KHÔNG email/điện thoại/cột khác]
 - Kịch bản: khi đọc lô 50 người thì chỉ một câu SQL [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » perf · MỘT câu SQL cho cả lô 50 id, p95 in số thật]
 
+### ADDED community/anh-tac-gia-doi-tac.md
+#### Yêu cầu: Bài công ty đã kết nối có mã người đăng để hiện ảnh thật
+Bài «Đối tác» trên bảng tin có mã người đăng; hàm đọc chéo vẫn từ chối người dùng ngoài, nên đối tác cộng đồng không nhận mã này.
+- Kịch bản: khi người xem nội bộ đọc bảng tin thì bài đối tác có mã người đăng [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » API bảng tin (service): một dòng gộp bài công ty mình + đối tác, mới nhất trước, nhãn nguồn + công ty + chức vụ]
+- Kịch bản: khi người dùng ngoài gọi thì bị từ chối [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts » người dùng ngoài ⇒ 42501, chưa đặt người xem ⇒ 42501, A tắt Bảng tin ⇒ rỗng]
+
 ### ADDED community/ma-nguoi-dang.md
 #### Yêu cầu: Bài có mã người đăng cho người xem nội bộ để hiện ảnh thật
 Bài trên bảng tin có mã người đăng khi người xem là nhân viên chủ quản; đối tác cộng đồng không nhận mã này.
 - Kịch bản: khi người xem nội bộ thì bài có mã người đăng, đối tác cộng đồng thì không [test: apps/hub-api/src/modules/packs/community/adapters/views.author-id.test.ts » người xem nội bộ nhận mã người đăng, đối tác cộng đồng không nhận]
 
 ## Việc còn lại
-- Ảnh tác giả bài ĐỐI TÁC trên bảng tin: `community.feed_connected` (community 0026) chưa trả `author_user_id` ⇒ cần migration pack-community mới (DROP/CREATE hàm thêm cột) + `ConnectedRow`/`connectedView` gắn `authorUserId` (web đã nối sẵn, chỉ cần dữ liệu). Cần điều phối giao số (gộp với lát `cr191-cross-comment` nếu cùng đụng hàm). Bình luận chéo cùng cách.
-- «@» (`MentionPicker`) chưa hiện ảnh: nối `usePeopleCards` (community) vào danh sách khi có thời gian.
-- Sơ đồ tổ chức dạng danh sách điện thoại (`org-member-cards`) chưa nối ảnh.
+- Bình luận chéo: ảnh người bình luận cùng cách (lát `cr191-cross-comment`).
 - e2e: điều phối chạy cuối đợt (chưa viết e2e riêng cho lát này).

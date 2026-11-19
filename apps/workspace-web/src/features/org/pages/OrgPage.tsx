@@ -5,6 +5,7 @@ import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePeopleCards } from "~/features/contract-shared/people";
 import { EditChartButton } from "~/features/org-chart/components/EditChartButton";
 import { Pager } from "~/features/table";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
@@ -75,6 +76,8 @@ export function OrgPage() {
     },
   });
   const act = (fn: () => Promise<unknown>) => run.mutate(fn);
+  // CR-191 · ảnh thật cho tên thành viên (bảng + danh sách điện thoại): thẻ người theo lô, một lời gọi mỗi trang.
+  const cards = usePeopleCards((org.data?.items ?? []).map((m) => m.user_id));
 
   if (org.isError)
     return (
@@ -93,7 +96,9 @@ export function OrgPage() {
       onSet={(id) => act(() => setManager(m.user_id, id))}
     />
   );
-  const nameCell = (m: (typeof rows)[number]) => <NameCell m={m} />;
+  const nameCell = (m: (typeof rows)[number]) => (
+    <NameCell m={m} src={cards.get(m.user_id)?.avatar} />
+  );
 
   return (
     <section className="flex flex-col gap-5 max-sm:pb-24">

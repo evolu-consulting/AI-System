@@ -183,6 +183,13 @@
       "when": 1807000720000,
       "tag": "0029_cr191_mention_live",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1807000760000,
+      "tag": "0031_cr191_feed_connected_author",
+      "breakpoints": true
     }
   ]
 }

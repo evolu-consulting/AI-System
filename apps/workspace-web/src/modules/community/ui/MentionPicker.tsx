@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/u
 import { IconButton } from "~/shared/ui/IconButton";
 import { useApp } from "../application/ctx";
 import type { PeopleScope } from "../application/ports";
+import { usePeopleCards } from "../application/use-people-cards";
 import { usePeople } from "../application/usePeople";
 import type { DraftMention } from "../domain/mention";
 import { t } from "../i18n";
@@ -95,11 +96,13 @@ export function MentionChips({
 
 function PersonRow({
   p,
+  src,
   on,
   disabled,
   toggle,
 }: {
   p: Person;
+  src?: string | null | undefined;
   on: boolean;
   disabled: boolean;
   toggle: () => void;
@@ -120,7 +123,7 @@ function PersonRow({
           htmlFor={`mp-${p.userId}`}
           className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3"
         >
-          <PersonAvatar name={p.name} id={p.userId} size={32} interactive={false} />
+          <PersonAvatar name={p.name} id={p.userId} src={src} size={32} interactive={false} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-sm font-semibold">{p.name}</span>
             <span className="truncate text-xs text-muted-foreground">
@@ -187,6 +190,7 @@ export function MentionPicker({
     setGroup(undefined);
   }, [open]);
   const { people, more, state, loadMore } = usePeople(open, q, scope, group);
+  const cards = usePeopleCards(people.map((x) => x.userId)); // ảnh thật (thẻ người theo lô)
   const end = useRef<HTMLLIElement>(null);
   useEffect(() => {
     const el = end.current;
@@ -281,6 +285,7 @@ export function MentionPicker({
                 <PersonRow
                   key={o.userId}
                   p={o}
+                  src={cards.get(o.userId)?.avatar}
                   on={sel.some((x) => x.userId === o.userId)}
                   disabled={full}
                   toggle={() => toggle(o)}

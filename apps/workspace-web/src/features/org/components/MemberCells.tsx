@@ -6,10 +6,10 @@ import { useTranslation } from "react-i18next";
 import { PersonPick } from "~/shared/ui/PersonPick";
 import { headCandidates, managerNotHead, suggestedHeadOf } from "../lib/org";
 
-export function NameCell({ m }: { m: OrgMemberRow }) {
+export function NameCell({ m, src }: { m: OrgMemberRow; src?: string | null | undefined }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <PersonAvatar name={m.display_name} id={m.user_id} size={32} interactive={false} />
+      <PersonAvatar name={m.display_name} id={m.user_id} src={src} size={32} interactive={false} />
       <span className="min-w-0">
         <TruncText text={m.display_name} className="block font-medium" />
         <TruncText text={m.job_title || m.username} className="block text-sm text-dim" />
