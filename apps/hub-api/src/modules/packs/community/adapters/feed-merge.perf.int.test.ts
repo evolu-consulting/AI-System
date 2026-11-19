@@ -49,6 +49,7 @@ const base: FeedFilter = {
   area: null,
   author: null,
   authorUser: null,
+  source: null,
   q: null,
   mine: false,
   cursor: null,

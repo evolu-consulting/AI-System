@@ -31,8 +31,7 @@ test("sửa bài: bớt một tệp, thêm một tệp, lưu ⇒ thẻ tệp đ�
   const posted = page.getByTestId("post").filter({ hasText: "Bài sửa tệp" }).first();
   const card = page.locator(`[data-post-id="${await posted.getAttribute("data-post-id")}"]`);
   await expect(card.getByTestId("file-card")).toHaveCount(2);
-  await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
-  await page.getByRole("menuitem", { name: "Sửa bài" }).click();
+  await card.getByRole("button", { name: "Sửa bài" }).click();
   const edit = card.getByTestId("edit-attach");
   await expect(edit.getByTestId("draft-file")).toHaveCount(2);
   await edit
@@ -84,13 +83,15 @@ test("hộp Nhắc tên: nút chỉ biểu tượng, tìm, chọn 2 người, «
   await expect(page.getByTestId("mention-chip")).toHaveCount(2);
 });
 
-// CR-179 (chưa chạy trên evotest) · ô đăng bài thẳng hàng thẻ «Bộ lọc»; logo công ty cùng hàng chữ «Công ty»; trang trống canh giữa.
-test("CR-179: mép trên ô đăng bài = mép trên thẻ «Bộ lọc» (lệch ≤ 1px)", async ({ page }) => {
+// CR-191 · bảng tin một cột: ô đăng bài và thẻ bài cùng một cột (cùng mép trái/phải), không còn thẻ «Bộ lọc» bên phải.
+test("CR-191: ô đăng bài và thẻ bài cùng cột, không có cột phải", async ({ page }) => {
   await page.goto("/community");
   const comp = await page.getByTestId("composer").boundingBox();
-  const filt = await page.locator(".rail .rcard").first().boundingBox();
-  expect(comp && filt).toBeTruthy();
-  expect(Math.abs((comp?.y ?? 0) - (filt?.y ?? 99))).toBeLessThanOrEqual(1);
+  const post = await page.getByTestId("post").first().boundingBox();
+  expect(comp && post).toBeTruthy();
+  expect(Math.abs((comp?.x ?? 0) - (post?.x ?? 99))).toBeLessThanOrEqual(1);
+  expect(Math.abs((comp?.width ?? 0) - (post?.width ?? 99))).toBeLessThanOrEqual(1);
+  await expect(page.locator(".rail")).toHaveCount(0);
 });
 
 test("CR-179: /community/me — logo công ty tròn, cùng hàng với tên công ty", async ({ page }) => {

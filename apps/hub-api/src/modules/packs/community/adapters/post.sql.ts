@@ -69,6 +69,8 @@ export type FeedFilter = {
   area: string | null;
   /** "host" = bài chủ quản; uuid = công ty; null = mọi người đăng. */
   author: string | null;
+  /** CR-191 · `own` = không kèm bài kết nối; `connected` = không trả bài công ty mình (vẫn đếm); null = cả hai. */
+  source: "own" | "connected" | null;
   /** CR-129 L5 · id người đăng (hồ sơ cá nhân); null = mọi người. */
   authorUser: string | null;
   q: string | null;
@@ -147,7 +149,8 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
           ilike ${q}::text)
     ), page as (
       select * from base v
-      where case ${f.tab}::text when 'all' then v.eff = 'active' when 'archived' then v.eff <> 'active'
+      where not ${f.source === "connected"}::boolean
+        and case ${f.tab}::text when 'all' then v.eff = 'active' when 'archived' then v.eff <> 'active'
           else v.eff = 'active' and v.type = ${f.tab}::text end
         and (${f.cursor?.at ?? null}::timestamptz is null
           or (v.created_at, v.id) < (${f.cursor?.at ?? null}::timestamptz, ${f.cursor?.id ?? null}::uuid))

@@ -188,10 +188,6 @@ test("3 loại bài có màu KHÁC nhau (nhãn, viền thẻ, nút soạn nhanh,
     [".ctype.sell svg", ".ctype.buy svg", ".ctype.note svg"].map((s) => color(s, "color")),
   );
   expect(new Set(icons).size).toBe(3);
-  const counts = await Promise.all(
-    ["sell", "buy", "note"].map((t) => color(`.tab[data-type="${t}"] .n`, "backgroundColor")),
-  );
-  expect(new Set(counts).size).toBe(3);
 });
 
 test("user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng; mục menu trái 'Bài đăng của tôi' sáng", async ({

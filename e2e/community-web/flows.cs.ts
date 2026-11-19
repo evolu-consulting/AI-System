@@ -121,7 +121,6 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
       `bài của chủ quản (needsReview=${needsReview}): ${hostPostText}`,
     ).toBeVisible({ timeout: 4_000 });
   }).toPass({ timeout: 60_000 });
-  await target.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
   await target.getByTestId("post-report").click();
   const dlg = buyer.page.getByTestId("report-dialog");
   await dlg.getByTestId("reason-submit").click();

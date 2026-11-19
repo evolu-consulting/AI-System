@@ -3,8 +3,10 @@
 import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyFirstPage, feedScopeKey, scopeChange, withoutGone } from "../domain/feed-merge";
+import { sourceQuery } from "../domain/feed-source";
 import { t } from "../i18n";
 import { useApp } from "./ctx";
+import type { ConnectedCompany } from "./ports";
 
 export function useFeedFilters(
   fixed: Pick<FeedQuery, "mine" | "authorOrgId" | "authorUserId"> = {},
@@ -14,20 +16,37 @@ export function useFeedFilters(
   const [cat, setCat] = useState("");
   const [area, setArea] = useState("");
   const [author, setAuthor] = useState("");
+  const [source, setSource] = useState("");
   const query: FeedQuery = {
     tab,
     ...fixed,
     ...(cat ? { cat } : {}),
     ...(area ? { area } : {}),
     ...(author && !fixed.authorOrgId ? { authorOrgId: author } : {}),
+    ...(fixed.authorOrgId ? {} : sourceQuery(source)),
     ...(search ? { q: search } : {}),
   };
   const clear = () => {
     setCat("");
     setArea("");
     setAuthor("");
+    setSource("");
+    setTab("all");
   };
-  return { tab, setTab, cat, setCat, area, setArea, author, setAuthor, query, clear };
+  return {
+    tab,
+    setTab,
+    cat,
+    setCat,
+    area,
+    setArea,
+    author,
+    setAuthor,
+    source,
+    setSource,
+    query,
+    clear,
+  };
 }
 
 /** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi người xem ⇒ bỏ danh sách cũ; chỉ đổi tab/bộ lọc ⇒ giữ bài cũ + `stale` (UI làm mờ) tới khi có trang đầu mới (CR-187 BR-187-9). */
@@ -89,6 +108,16 @@ export function useFeed(query: FeedQuery) {
   }, [api, query, cursor, loadingMore, stale]);
   const shown = useMemo(() => withoutGone(data, gone), [data, gone]);
   return { data: shown, error, stale, more: { has: !!cursor, loading: loadingMore, load } };
+}
+
+/** CR-191 · công ty đã kết nối (cho bộ lọc nguồn); lỗi/không đủ quyền ⇒ rỗng. */
+export function useConnected(enabled = true): ConnectedCompany[] {
+  const { api } = useApp();
+  const [list, setList] = useState<ConnectedCompany[]>([]);
+  useEffect(() => {
+    if (enabled) api.listConnected().then(setList, () => undefined);
+  }, [api, enabled]);
+  return list;
 }
 
 /** Danh sách công ty: chủ quản thấy tất cả đối tác; đối tác thấy công ty của mình. */

@@ -1,4 +1,4 @@
-// Bảng tin: FeedPage (2 cột: composer + thanh tab sticky + bài | rail lọc/đối tác) và FeedList (Profile: chip + lọc gọn).
+// Bảng tin: FeedPage (một cột: composer + thanh dính có nút «Lọc» + bài gộp) và FeedList (Profile: chip + lọc gọn).
 
 import type {
   FeedQuery,
@@ -13,12 +13,12 @@ import { useEffect, useRef, useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
-import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
+import { useConnected, useFeed, useFeedFilters } from "../application/useFeed";
 import { composerCompact, useNarrow, useStuck } from "../application/useStuck";
 import { hasActiveFilter } from "../domain/filters";
 import { t } from "../i18n";
 import { Composer } from "./Composer";
-import { FeedRail } from "./FeedRail";
+import { FeedFilterSheet } from "./FeedFilterSheet";
 import { PostCard } from "./PostCard";
 
 const TABS: { id: FeedTab }[] = [
@@ -147,16 +147,21 @@ function FeedMore({ more }: { more: MoreFeed }) {
   }, [has, load]);
   if (!has) return null;
   return (
-    <Button
-      variant="link"
-      ref={ref}
-      data-testid="feed-more"
-      disabled={loading}
-      aria-busy={loading}
-      onClick={() => void load()}
-    >
-      {t("community.feed.more")}
-    </Button>
+    <>
+      {loading && (
+        <div className="card post skeleton" data-testid="feed-skeleton" aria-hidden="true" />
+      )}
+      <Button
+        variant="link"
+        ref={ref}
+        data-testid="feed-more"
+        disabled={loading}
+        aria-busy={loading}
+        onClick={() => void load()}
+      >
+        {t("community.feed.more")}
+      </Button>
+    </>
   );
 }
 
@@ -221,10 +226,11 @@ export function FeedList({
   );
 }
 
+/** CR-191 · bảng tin MỘT cột (kiểu Facebook): ô đăng bài + thanh dính có nút «Lọc», bài gộp công ty mình + đối tác, tải 20 bài/lần khi cuộn. */
 export function FeedPage() {
   const f = useFeedFilters();
   const { data, error, stale, more } = useFeed(f.query);
-  const partners = usePartners();
+  const connected = useConnected();
   useFocusPost(!!data);
   const { sentinel, stuck, toTop } = useStuck();
   const narrow = useNarrow();
@@ -235,30 +241,12 @@ export function FeedPage() {
         <div className="stickytop" data-stuck={stuck}>
           <Composer compact={composerCompact(stuck, narrow)} onExpand={toTop} />
           <div className="feedbar">
-            <div className="tabs" role="tablist" aria-label={t("community.feed.filterAria")}>
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={f.tab === t.id}
-                  data-type={t.id}
-                  className={f.tab === t.id ? "tab on" : "tab"}
-                  onClick={() => f.setTab(t.id)}
-                >
-                  {tabLabel(t.id)}{" "}
-                  <span className="n">{data ? (data.counts[t.id] ?? 0) : "–"}</span>
-                </button>
-              ))}
-            </div>
+            {!narrow && <FeedFilterSheet f={f} data={data} connected={connected} narrow={false} />}
           </div>
         </div>
         <FeedBody data={data} error={error} more={more} stale={stale} />
       </div>
-      <FeedRail
-        filters={data ? <FeedFilters f={f} data={data} className="rfilter" /> : null}
-        partners={partners}
-      />
+      {narrow && <FeedFilterSheet f={f} data={data} connected={connected} narrow />}
     </div>
   );
 }

@@ -86,6 +86,9 @@ export interface FlowsApi {
   decideReport(id: string, input: FlowDecideInput): Promise<Report>;
 }
 
+/** Công ty đã kết nối: id = mã công ty (tenant), name = tên pháp lý. */
+export type ConnectedCompany = { id: string; name: string };
+
 export interface CommunityApi {
   flows: FlowsApi;
   /** `GET /pack/community/viewer` (C3: `/pack/:k/me` của kit đã chiếm `/me`). */
@@ -102,6 +105,8 @@ export interface CommunityApi {
   getPeople(ids: readonly string[]): Promise<PeopleResponse>;
   /** CR-147b · `PUT /pack/community/brand/cover` — chỉ chủ sở hữu công ty (`viewer.caps.companyAdmin`). */
   setCompanyCover(cover: string | null): Promise<void>;
+  /** CR-191 · công ty đã kết nối (`/pack/contracts/connect/links?status=connected`); không đủ quyền ⇒ rỗng. */
+  listConnected(): Promise<ConnectedCompany[]>;
   /** `GET /pack/community/feed` */
   listFeed(q: FeedQuery): Promise<FeedResponse>;
   /** `POST /pack/community/posts` */

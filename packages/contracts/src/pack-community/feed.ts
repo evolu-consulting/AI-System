@@ -16,6 +16,8 @@ export const FeedQuerySchema = z.strictObject({
   authorUserId: z.uuid().optional(),
   /** Tìm chữ thường trong tiêu đề, sản phẩm, nội dung (đã che với user ngoài). */
   q: z.string().trim().max(100).optional(),
+  /** CR-191 · nguồn bài trên bảng tin gộp: `own` = chỉ «Công ty mình», `connected` = chỉ «Đối tác» (mọi công ty đã kết nối). Vắng = cả hai. */
+  source: z.enum(["own", "connected"]).optional(),
   /** Chỉ bài của công ty mình (trang hồ sơ "Bài của tôi"). */
   mine: z.boolean().optional(),
   cursor: z.string().max(200).optional(),

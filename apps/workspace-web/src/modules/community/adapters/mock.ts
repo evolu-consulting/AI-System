@@ -14,6 +14,7 @@ import { applyFeedQuery, countTabs, uniqueSorted } from "../domain/filters";
 import { applyMask, detectHits, type MaskContext } from "../domain/mask";
 import { canViewPost, defaultAudience } from "../domain/visibility";
 import { commentMutations } from "./mock-comments";
+import { MOCK_CONNECTED, mockConnectedPosts } from "./mock-connected";
 import { fileMock } from "./mock-files";
 import { flowsMock } from "./mock-flows";
 import { profileMock } from "./mock-profile";
@@ -186,6 +187,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       visible,
     ),
     listCats: async () => CATS,
+    listConnected: async () => (isHost(me) ? MOCK_CONNECTED : []),
     listFeed: async (q) => {
       const base = posts
         .filter(
@@ -195,9 +197,33 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
             (!q.authorUserId || p.authorName === me.name),
         )
         .map(toView);
-      const items = applyFeedQuery(base, q);
+      const own =
+        q.source === "connected" || q.authorOrgId?.startsWith("c0000000")
+          ? []
+          : applyFeedQuery(base, q);
+      const withPartners =
+        isHost(me) &&
+        q.source !== "own" &&
+        (q.tab ?? "all") !== "archived" &&
+        !q.mine &&
+        !q.cat &&
+        !q.area &&
+        !q.q &&
+        !q.authorUserId;
+      const connected = !withPartners
+        ? []
+        : mockConnectedPosts().filter(
+            (p) =>
+              (!q.tab || q.tab === "all" || p.type === q.tab) &&
+              (!q.authorOrgId || p.authorOrgId === q.authorOrgId),
+          );
+      const all = [...own, ...connected].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const from = Number(q.cursor ?? 0);
+      const limit = q.limit ?? 20;
+      const page = all.slice(from, from + limit);
       return {
-        items: items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+        items: page,
+        ...(from + limit < all.length ? { nextCursor: String(from + limit) } : {}),
         counts: countTabs(base, q),
         facets: {
           cats: uniqueSorted(base.flatMap((p) => p.cats)),

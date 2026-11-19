@@ -11,6 +11,7 @@ const f: FeedFilter = {
   area: null,
   author: null,
   authorUser: null,
+  source: null,
   q: null,
   mine: false,
   cursor: null,
@@ -26,5 +27,10 @@ describe("CR-191 withConnected", () => {
     expect(withConnected(host, f)).toBe(true);
     expect(withConnected(host, { ...f, author: "host" })).toBe(false);
     expect(withConnected({ org: "x" } as unknown as Access, f)).toBe(false);
+  });
+
+  it("lọc nguồn «Công ty mình» không kèm bài công ty kết nối, «Đối tác» vẫn gọi", () => {
+    expect(withConnected(host, { ...f, source: "own" })).toBe(false);
+    expect(withConnected(host, { ...f, source: "connected" })).toBe(true);
   });
 });

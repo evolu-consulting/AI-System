@@ -16,6 +16,13 @@
   [data-mod="community"] .ctime .acts {
     gap: 0;
   }
+  [data-mod="community"] .post .ph .acts {
+    gap: 0;
+  }
+  [data-mod="community"] .filterbtn,
+  [data-mod="community"] .filterfab {
+    min-height: 44px;
+  }
   [data-mod="community"] .iconact {
     width: 44px;
     height: 44px; /* CR-187 BR-187-6: vùng bấm 44px, sát nhau */

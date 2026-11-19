@@ -1,5 +1,4 @@
-/* community-feed-redesign: bảng tin 2 cột, thanh tab sticky, màu theo loại bài, dải deal, callout, rail phải.
-   Nguồn: mockup feed-mockup.html (chỉ light). Màu nhấn theo --cm-accent*; buy/note là màu semantic cố định. */
+/* community-feed-redesign (CR-191: một cột): thanh dính có nút Lọc, màu theo loại bài, dải deal, callout. */
 [data-mod="community"] {
   --cm-sell: var(--type-sell);
   --cm-sell-soft: var(--type-sell-soft);
@@ -25,31 +24,21 @@
 
 /* ---------- Bố cục 2 cột ---------- */
 [data-mod="community"] .feedwrap {
-  max-width: 1020px;
+  max-width: 680px;
   margin: 0 auto;
   padding: 20px 16px 56px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 312px;
-  gap: 26px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   align-items: start;
 }
 [data-mod="community"] .feedcol {
   min-width: 0;
 }
-[data-mod="community"] .rail {
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
 @media (max-width: 900px) {
   [data-mod="community"] .feedwrap {
     grid-template-columns: 1fr;
     max-width: 640px;
-  }
-  [data-mod="community"] .rail {
-    position: static;
   }
 }
 
@@ -365,83 +354,6 @@
   color: var(--primary-foreground);
 }
 
-/* ---------- Rail phải ---------- */
-[data-mod="community"] .rcard {
-  background: var(--card);
-  border: 1px solid var(--cm-line);
-  border-radius: 16px;
-  box-shadow: var(--cm-shadow);
-  overflow: hidden;
-}
-[data-mod="community"] .rcard h2 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 13px 15px 9px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
-[data-mod="community"] .rcard h2 svg {
-  color: var(--cm-ink-3);
-}
-[data-mod="community"] .rfilter {
-  padding: 0 13px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-[data-mod="community"] .rfilter .field {
-  height: 38px;
-  background: var(--cm-surface-2);
-  font-size: 13px;
-}
-[data-mod="community"] .rfilter .linkbtn {
-  align-self: flex-start;
-}
-[data-mod="community"] .rrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 15px;
-  border-top: 1px solid var(--cm-line-2);
-}
-[data-mod="community"] .rrow:hover {
-  background: var(--cm-surface-2);
-}
-[data-mod="community"] .rrow .ra {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  font-size: 12.5px;
-}
-[data-mod="community"] .rt {
-  flex: 1;
-  min-width: 0;
-}
-[data-mod="community"] .rt b {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-[data-mod="community"] .rt span {
-  font-size: 12px;
-  color: var(--cm-ink-3);
-}
-[data-mod="community"] .rtips {
-  margin: 0;
-  padding: 0 15px 14px 32px;
-  font-size: 12.5px;
-  color: var(--ink-2);
-}
-[data-mod="community"] .rtips li + li {
-  margin-top: 6px;
-}
-
 /* ---------- Thẻ bài: vạch spine + pill loại ---------- */
 [data-mod="community"] .post {
   box-shadow: var(--cm-shadow);
@@ -623,25 +535,6 @@
   background: color-mix(in srgb, var(--cm-good) 16%, transparent);
 }
 
-[data-mod="community"] .rlist {
-  max-height: 264px;
-  overflow-y: auto;
-}
-[data-mod="community"] a.rrow {
-  color: inherit;
-  text-decoration: none;
-}
-[data-mod="community"] .rext {
-  display: inline-flex;
-  color: var(--cm-ink-3);
-  opacity: 0.4;
-  transition: opacity 0.12s;
-}
-[data-mod="community"] .rrow:hover .rext {
-  opacity: 1;
-  color: var(--cm-accent);
-}
-
 /* ---------- CR-179 (UAT): điện thoại — đầu thẻ bài + ô đăng bài thu gọn không vỡ ---------- */
 @media (max-width: 560px) {
   /* Đầu thẻ bài: hàng 1 = avatar · tên/meta · nút «…»; nhãn loại bài xuống hàng 2 dưới tên (tên không còn bị ép xuống 3 dòng). */
@@ -721,4 +614,101 @@
 [data-mod="community"] .feedbody[data-stale="true"] {
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* ---------- CR-191 · bảng tin một cột: nút Lọc, sheet lọc, icon thao tác trên thẻ bài, khung chờ ---------- */
+[data-mod="community"] .filterbtn,
+[data-mod="community"] .filterfab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--cm-line);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+}
+[data-mod="community"] .filterbtn .n,
+[data-mod="community"] .filterfab .n {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--cm-accent);
+  color: var(--primary-foreground);
+  font-size: 12px;
+  display: inline-grid;
+  place-items: center;
+}
+[data-mod="community"] .filterfab {
+  position: fixed;
+  left: 16px; /* trái: nút trợ lý nằm phải ⇒ không đè nhau (luật R4) */
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  height: 48px;
+  border-radius: 999px;
+  box-shadow: var(--cm-shadow);
+}
+[data-mod="community"] .feedsheet-in h3 {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+[data-mod="community"] .feedsheet-in .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+[data-mod="community"] .feedsheet-in .selrow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+[data-mod="community"] .feedsheet-in [data-slot="sheet-footer"] {
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+[data-mod="community"] .post .ph .acts {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+[data-mod="community"] .post .ph .atitle {
+  color: var(--cm-ink-3);
+  font-size: 13px;
+}
+[data-mod="community"] .post .pfiles,
+[data-mod="community"] .post .pview {
+  padding: 4px 16px 12px 19px;
+  font-size: 13px;
+  color: var(--cm-ink-3);
+}
+[data-mod="community"] .post.skeleton {
+  min-height: 220px;
+  background: linear-gradient(90deg, var(--cm-surface-2), var(--card), var(--cm-surface-2));
+  background-size: 200% 100%;
+  animation: cm-skel 1.2s linear infinite;
+}
+@keyframes cm-skel {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-mod="community"] .post.skeleton {
+    animation: none;
+  }
+}
+[data-mod="community"] .feedsheet-in {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
 }

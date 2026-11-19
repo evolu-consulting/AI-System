@@ -17,6 +17,7 @@ export function feedQueryString(q: FeedQuery): Record<string, string | number | 
     area: q.area,
     authorOrgId: q.authorOrgId,
     authorUserId: q.authorUserId,
+    source: q.source,
     q: q.q,
     mine: q.mine ? "true" : undefined,
     cursor: q.cursor,
@@ -74,6 +75,13 @@ export function createHttpApi(): CommunityApi {
     setCompanyCover: async (cover) => {
       await api(`${BASE}/brand/cover`, { method: "PUT", body: { cover } });
     },
+    listConnected: () =>
+      api<{ items: { tenant_id: string; legal_name: string }[] }>(
+        "/pack/contracts/connect/links?status=connected&limit=50",
+      ).then(
+        (r) => r.items.map((c) => ({ id: c.tenant_id, name: c.legal_name })),
+        () => [],
+      ),
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),
     uploadFile: (file) =>
       api(`${BASE}/files`, {

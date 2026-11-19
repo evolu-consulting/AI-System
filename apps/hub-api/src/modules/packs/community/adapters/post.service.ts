@@ -140,6 +140,7 @@ export function withConnected(a: Access, f: FeedFilter): boolean {
     a.org === null &&
     f.tab !== "archived" &&
     !f.mine &&
+    f.source !== "own" &&
     f.authorUser === null &&
     f.cat === null &&
     f.area === null &&

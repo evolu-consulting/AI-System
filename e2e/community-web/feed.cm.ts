@@ -22,21 +22,18 @@ test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có 
   await expect(posted).toBeVisible();
   // Khoá theo id: khi sửa, tiêu đề chuyển thành ô nhập nên lọc theo chữ không còn khớp (dải deal không lặp tên hàng).
   const card = page.locator(`[data-post-id="${await posted.getAttribute("data-post-id")}"]`);
-  await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
-  await page.getByRole("menuitem", { name: "Sửa bài" }).click();
+  await card.getByRole("button", { name: "Sửa bài" }).click();
   await card.getByLabel("Sửa nội dung").fill("Nội dung đã chỉnh");
   await card.getByRole("button", { name: "Lưu thay đổi" }).click();
   await expect(card.getByText("đã sửa")).toBeVisible();
-  await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
-  await page.getByRole("menuitem", { name: "Xoá bài" }).click();
+  await card.getByRole("button", { name: "Xoá bài" }).click();
   // CR-175: xác nhận là hộp thoại (không inline trong thẻ bài); Huỷ ⇒ bài còn; Xoá ⇒ bài mất ngay, không tải lại.
   const dlg = page.getByRole("dialog");
   await expect(dlg.getByText("Xoá vĩnh viễn bài đăng này?")).toBeVisible();
   await expect(card.getByText("Xoá vĩnh viễn bài đăng này?")).toHaveCount(0);
   await dlg.getByRole("button", { name: "Huỷ" }).click();
   await expect(card).toBeVisible();
-  await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
-  await page.getByRole("menuitem", { name: "Xoá bài" }).click();
+  await card.getByRole("button", { name: "Xoá bài" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xoá", exact: true }).click();
   await expect(card).toHaveCount(0);
   await expect(page.getByText("Keo dán thử")).toHaveCount(0);
@@ -102,22 +99,20 @@ test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => 
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible(); // màu nhấn = thương hiệu công ty, không còn chọn màu cá nhân (COM-FR-39)
 });
 
-test("bảng tin 2 cột: tab sticky, dải deal hiển thị giá chào, rail có bộ lọc và đối tác", async ({
+test("bảng tin một cột: dải deal hiển thị giá chào, không còn cột phụ (rail) và hàng chip loại bài", async ({
   page,
 }) => {
   await page.goto("/community");
-  await expect(page.getByRole("tab", { name: /Tất cả/ })).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("tab", { name: /Cần bán/ }).click();
-  await expect(page.getByRole("tab", { name: /Cần bán/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.locator(".rail")).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "Cột phụ bảng tin" })).toHaveCount(0);
+  await expect(page.getByTestId("rail-partners")).toHaveCount(0);
+  await page.getByTestId("feed-filter-btn").click();
+  await page.getByTestId("filter-type-sell").click();
+  await page.getByRole("button", { name: "Xong" }).click();
   const deal = page.getByTestId("deal").first();
   await expect(deal).toBeVisible();
   await expect(deal.locator(".hero .k")).toHaveText("Giá chào");
-  const rail = page.getByRole("complementary", { name: "Cột phụ bảng tin" });
-  await expect(rail.getByLabel("Nhóm hàng")).toBeVisible();
-  await expect(rail.getByTestId("rail-partners")).toBeVisible();
-  const org = rail.getByTestId("rail-org").first();
-  await expect(org).toHaveAttribute("href", /\/community\/profile\//);
-  await expect(org).toHaveAttribute("target", "_blank");
 });
 
 for (const scheme of ["light", "dark"] as const) {

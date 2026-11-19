@@ -2,12 +2,13 @@
 
 import type { MediaItem, ModerationItem, PostView } from "@ai/contracts/community";
 import { Button } from "@ai/web-kit/ui/kit/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
-import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
+import { isPartnerPost, sourceKey } from "../domain/feed-source";
+import { dealStrip, expiryNote, timeAgo } from "../domain/format";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
 import { opensCommentThread, opensThreadByDefault } from "../domain/search-hint";
 import { t } from "../i18n";
@@ -15,10 +16,10 @@ import { AttachEditor } from "./AttachEditor";
 import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
 import { Highlighted } from "./Highlighted";
-import { IconBox, IconChat, IconCheck, IconDots, IconLock, IconSave } from "./icons";
+import { IconBox, IconChat, IconCheck, IconLock, IconSave } from "./icons";
 import { MentionedLine } from "./MentionedLine";
+import { has, PostActions } from "./PostActions";
 import { PostMedia } from "./PostMedia";
-import { has, PostMenu } from "./PostMenu";
 import { QuoteForm } from "./QuoteForm";
 import { Thread } from "./Thread";
 
@@ -93,7 +94,6 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
   const canReport = p.authorOrgId !== viewer.orgId;
   const download = (id: string, name: string) =>
     api.downloadFile(id, name).catch(() => toast(t("community.post.downloadFailed")));
-  const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   // Mở sẵn bình luận khi vào từ chuông `?post=<id>&comment=<id>` (CR-129).
   const fromBell = opensCommentThread(urlSearch, p.id);
@@ -110,7 +110,6 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
   const openQuote = (supplier: string, commentId?: string) =>
     setQuote({ supplier, ...(commentId ? { commentId } : {}), idx: 0 });
   const act = async (a: "archive" | "unarchive" | "done" | "hide" | "unhide" | "delete") => {
-    setMenu(false);
     if (a === "delete") {
       // Xoá lạc quan: bài mất ngay; lỗi ⇒ khôi phục + báo.
       dropPost(p.id, true);
@@ -130,7 +129,6 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
     bump();
   };
   const askDelete = async () => {
-    setMenu(false);
     const ok = await confirmDialog({
       title: t("community.post.deleteTitle"),
       body: t("community.post.confirmDelete"),
@@ -144,6 +142,7 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
   const muted = p.status === "archived" || p.status === "done" || p.status === "expired";
   const hasMenu = canReport || p.actions.some((a) => a !== "saveQuote");
   const expiry = expiryNote(p.expiresAt);
+  const partner = isPartnerPost(p);
   return (
     <article
       className={`card post ${p.type}${muted ? " muted" : ""}`}
@@ -151,14 +150,34 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
       data-post-id={p.id}
     >
       <div className="ph">
-        <span className={`av ${tone(p.authorOrgId, p.authorSide === "host")}`}>
-          {initials(p.authorOrgName)}
-        </span>
+        <PersonAvatar
+          name={p.authorName}
+          id={`${p.authorOrgId}:${p.authorName}`}
+          size={40}
+          className="av"
+        />
         <div className="who">
-          <b>{p.authorOrgName}</b>
+          <b data-testid="post-author">{p.authorName}</b>
+          {p.authorTitle && <span className="atitle"> · {p.authorTitle}</span>}
           <div className="meta">
-            {p.authorName} · {timeAgo(p.createdAt)} · <IconLock size={12} />
-            {p.authorSide === "host" ? t("community.post.friends") : t("community.post.hostOnly")}
+            <span data-testid="post-company">{p.authorOrgName}</span>
+            <span
+              className={`tag sm ${partner ? "soon" : "grey"}`}
+              data-testid="post-source"
+              data-source={sourceKey(p)}
+            >
+              {t(`community.feed.source.${sourceKey(p)}`)}
+            </span>{" "}
+            · {timeAgo(p.createdAt)}
+            {!partner && (
+              <>
+                {" · "}
+                <IconLock size={12} />
+                {p.authorSide === "host"
+                  ? t("community.post.friends")
+                  : t("community.post.hostOnly")}
+              </>
+            )}
             {p.edited && <span className="tag grey sm">{t("community.post.edited")}</span>}
             {p.status === "archived" && (
               <span className="tag grey sm">{t("community.post.archived")}</span>
@@ -180,43 +199,17 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
           </Button>
         )}
         {hasMenu && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                className="iconbtn"
-                aria-label={t("community.post.options")}
-                aria-expanded={menu}
-                onClick={() => setMenu(!menu)}
-              >
-                <IconDots />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{t("community.post.options")}</TooltipContent>
-          </Tooltip>
+          <PostActions
+            p={p}
+            onEdit={() => setEditing(true)}
+            onAsk={() => {
+              void askDelete();
+            }}
+            onDo={act}
+            onReport={canReport ? () => setReporting(true) : undefined}
+          />
         )}
       </div>
-      {menu && (
-        <PostMenu
-          p={p}
-          onEdit={() => {
-            setMenu(false);
-            setEditing(true);
-          }}
-          onAsk={() => {
-            void askDelete();
-          }}
-          onDo={act}
-          onReport={
-            canReport
-              ? () => {
-                  setMenu(false);
-                  setReporting(true);
-                }
-              : undefined
-          }
-        />
-      )}
       {reporting && <ReportDialog postId={p.id} onClose={() => setReporting(false)} />}
       {mod && <ModerationNote item={mod} />}
       {editing ? (
@@ -298,18 +291,29 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
           }}
         />
       )}
-      <div className="pact">
-        <button
-          type="button"
-          className={open ? "on" : ""}
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-        >
-          <IconChat />
-          {t("community.post.comments", { n: p.commentCount })}
-        </button>
-      </div>
-      {open && (
+      {partner && (p.fileCount ?? 0) > 0 && (
+        <div className="pfiles" data-testid="post-files">
+          {t("community.feed.files", { n: p.fileCount })}
+        </div>
+      )}
+      {partner ? (
+        <div className="pview" data-testid="post-viewonly">
+          {t("community.feed.viewOnly")}
+        </div>
+      ) : (
+        <div className="pact">
+          <button
+            type="button"
+            className={open ? "on" : ""}
+            aria-expanded={open}
+            onClick={() => setOpen(!open)}
+          >
+            <IconChat />
+            {t("community.post.comments", { n: p.commentCount })}
+          </button>
+        </div>
+      )}
+      {open && !partner && (
         <Thread
           post={p}
           onChanged={bump}

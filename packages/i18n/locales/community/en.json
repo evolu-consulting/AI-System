@@ -97,17 +97,22 @@
       },
       "empty": "No posts in this section.",
       "loadError": "Could not load the feed",
-      "rail": {
-        "aria": "Feed sidebar",
-        "filters": "Filters",
-        "partners": "Partners",
-        "yourCompany": "Your company",
-        "tipsTitle": "Posting tips",
-        "tip1": "State the price or budget so partners can reply faster.",
-        "tip2": "Add the quantity and delivery area right in the post.",
-        "tip3": "Attach real photos of the goods to build trust.",
-        "left": "left"
-      }
+      "source": {
+        "own": "Your company",
+        "connected": "Partner"
+      },
+      "filter": {
+        "button": "Filter",
+        "title": "Filter the feed",
+        "type": "Post type",
+        "source": "Source",
+        "sourceAll": "All",
+        "done": "Done",
+        "active": "{{n}} filters on"
+      },
+      "loadingMore": "Loading more posts…",
+      "viewOnly": "Partner post, view only",
+      "files": "{{n}} attachments"
     },
     "audience": {
       "label": "Audience",

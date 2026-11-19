@@ -97,17 +97,22 @@
       },
       "empty": "Không có bài đăng nào trong mục này.",
       "loadError": "Lỗi tải bảng tin",
-      "rail": {
-        "aria": "Cột phụ bảng tin",
-        "filters": "Bộ lọc",
-        "partners": "Đối tác",
-        "yourCompany": "Công ty của bạn",
-        "tipsTitle": "Mẹo đăng bài",
-        "tip1": "Ghi rõ giá hoặc ngân sách để đối tác phản hồi nhanh hơn.",
-        "tip2": "Thêm số lượng và khu vực giao nhận ngay trong bài.",
-        "tip3": "Đính kèm ảnh thật của hàng để tăng độ tin cậy.",
-        "left": "đã rời"
-      }
+      "source": {
+        "own": "Công ty mình",
+        "connected": "Đối tác"
+      },
+      "filter": {
+        "button": "Lọc",
+        "title": "Lọc bảng tin",
+        "type": "Loại bài",
+        "source": "Nguồn",
+        "sourceAll": "Tất cả",
+        "done": "Xong",
+        "active": "{{n}} bộ lọc đang bật"
+      },
+      "loadingMore": "Đang tải thêm bài…",
+      "viewOnly": "Bài của đối tác, chỉ xem",
+      "files": "{{n}} tệp đính kèm"
     },
     "audience": {
       "label": "Người xem",

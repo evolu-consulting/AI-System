@@ -121,6 +121,7 @@ describe("com-c3 review", () => {
           area: null,
           author: null,
           authorUser: null,
+          source: null,
           q: null,
           mine: false,
           cursor: null,
