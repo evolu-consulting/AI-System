@@ -426,7 +426,7 @@ b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
 c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
-7c55d3c690785d8ecbef83ac023df24afb029cce0f2d0975ba176f6910de9821  e2e/contracts-web/cr157-manual-fallback.cw.ts
+c9c7bcf86307370400f0737b10dd712c1d8daa4647518a86514f225d0de7cf9f  e2e/contracts-web/cr157-manual-fallback.cw.ts
 4069eeaba8f6cb918b0b4cecd436bbaba40d9029ce3efc57ed605895b718a03f  e2e/contracts-web/cr158-tenant-favicon.cw.ts
 00c89f42a795b68180a4256fb17bb2e4f476cb47133694b19e24448b66226713  e2e/contracts-web/cr171-kinds.cw.ts
 af1e92acc993181bfa5c31c7d05801452256b3ea91e8b4a27e5b7ca0f87da998  e2e/contracts-web/cr173-attach-dropzone.cw.ts

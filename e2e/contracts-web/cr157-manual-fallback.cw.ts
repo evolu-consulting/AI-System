@@ -181,7 +181,8 @@ test("CR-193 · nhập tay: đầu trang thẳng mép với lưới", async ({ p
   await installV2f(page, { contract: () => manual() });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   const head = await page.getByTestId("form-bar").boundingBox();
-  const form = await page.getByTestId("manual-banner").boundingBox();
+  // thẻ ngoài của khối nhập tay (cha của manual-banner) = mép trái cột form
+  const form = await page.getByTestId("manual-banner").locator("..").boundingBox();
   const side = await page.getByTestId("manual-side").boundingBox();
   expect(head && form && side).toBeTruthy();
   expect(Math.abs((head?.x ?? 0) - (form?.x ?? 99))).toBeLessThan(2);
