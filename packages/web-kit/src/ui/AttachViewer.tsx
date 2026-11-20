@@ -2,7 +2,8 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useEffect } from "react";
-import { ATTACH_SIZE, type AttachItem, isPdfItem, stepIndex } from "../attach-layout";
+import { ATTACH_SIZE, type AttachItem, isPdfItem, isTextItem, stepIndex } from "../attach-layout";
+import { AttachTextPane } from "./AttachTextPane";
 import { ViewerStage } from "./attach-frame";
 import type { AttachGalleryProps } from "./attach-gallery-props";
 import { DownloadIcon, navBtn, useLazyUrl } from "./attach-parts";
@@ -33,6 +34,7 @@ export function AttachViewer({
   }, [index, n, onIndex]);
   if (!cur) return null;
   const pdf = isPdfItem(cur);
+  const text = isTextItem(cur);
   const { labels } = props;
   return (
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
@@ -93,6 +95,12 @@ export function AttachViewer({
               <ViewerStage loading={!url && !failed} loadingText={labels.loading ?? "…"}>
                 {failed || !url ? (
                   <span>{labels.failed}</span>
+                ) : text ? (
+                  <AttachTextPane
+                    url={url}
+                    failedText={labels.failed}
+                    truncatedText={labels.textTruncated}
+                  />
                 ) : pdf ? (
                   <iframe
                     title={cur.name}

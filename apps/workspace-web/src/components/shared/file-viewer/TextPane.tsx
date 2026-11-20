@@ -1,7 +1,8 @@
 // CR-194 · tệp văn bản thuần: chỉ chèn text node (React escape) trong <pre> ⇒ không có đường XSS. ≤ 1 MB đầu; lớn hơn ⇒ ghi chú.
+
+import { readTextHead } from "@ai/web-kit/text-head";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { readTextHead } from "./text-head";
 
 export default function TextPane({ blob, onError }: { blob: Blob; onError: () => void }) {
   const { t } = useTranslation();

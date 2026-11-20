@@ -12,3 +12,9 @@ export function scopeLabel(p: {
   if (p.authorSide !== "host") return t("community.post.hostOnly");
   return p.audience ? audienceSummary(p.audience, p.type) : null; // người xem không phải chủ quản không nhận `audience` ⇒ không nói sai
 }
+
+/** CR-195 BR-195-4 · «Chỉ nội bộ» ⇒ ổ khoá; còn lại (tất cả/nhà cung cấp/nhóm/công ty cụ thể) ⇒ biểu tượng người/nhóm. */
+export const scopeIsInternal = (p: {
+  authorSide: "host" | "partner";
+  audience?: PostAudience | undefined;
+}): boolean => p.authorSide !== "host" || p.audience?.mode === "internal";

@@ -1,9 +1,10 @@
 // CR-144 · nội dung hộp «Xem» của hồ sơ duyệt: người duyệt (+ thay/duyệt thay), bước, thời điểm, quyết định, ý kiến, chữ ký, tệp.
 // Thuần trình bày: `urls` là blob URL đã tải (fileId → URL); chưa có ⇒ «Đang tải», `failed` ⇒ báo lỗi.
+
+import { viewerKind } from "@ai/web-kit/viewer-kind";
 import { FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DownloadLink, FilePreview } from "~/components/shared/file-viewer/FilePreview";
-import { viewerKind } from "~/components/shared/file-viewer/viewer-kind";
 import type { RecordLine } from "../lib/record-view";
 
 export type EvidenceUrls = {

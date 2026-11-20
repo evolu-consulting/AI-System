@@ -6,6 +6,7 @@ import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
+import { useNarrow } from "../application/useStuck";
 import { draftFromFields } from "../domain/compose";
 import { canReportPost } from "../domain/feed-source";
 import { dealStrip, expiryNote } from "../domain/format";
@@ -152,6 +153,8 @@ export function PostCard({
   const muted = p.status === "archived" || p.status === "done" || p.status === "expired";
   const hasMenu = canReport || p.actions.some((a) => a !== "saveQuote");
   const _expiry = expiryNote(p.expiresAt);
+  const narrow = useNarrow();
+  const typePill = <span className={`pill ${p.type}`}>{t(`community.postType.${p.type}`)}</span>;
   return (
     <article
       className={`card post ${p.type}${muted ? " muted" : ""}`}
@@ -167,11 +170,18 @@ export function PostCard({
           className="av"
         />
         <div className="who">
-          <b data-testid="post-author">{p.authorName}</b>
-          {p.authorTitle && <span className="atitle"> · {p.authorTitle}</span>}
-          <PostMeta p={p} />
+          <div className="nm">
+            <b data-testid="post-author">{p.authorName}</b>
+            {p.authorTitle && (
+              <span className="atitle">
+                <span className="sep" aria-hidden="true" />
+                {p.authorTitle}
+              </span>
+            )}
+          </div>
+          <PostMeta p={p} pill={narrow ? typePill : undefined} />
         </div>
-        <span className={`pill ${p.type}`}>{t(`community.postType.${p.type}`)}</span>
+        {!narrow && typePill}
         {isHostViewer && has(p, "saveQuote") && p.type === "sell" && (
           <Button variant="outline" onClick={() => openQuote(p.authorOrgName)}>
             <IconSave size={16} />

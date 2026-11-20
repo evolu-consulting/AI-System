@@ -1,44 +1,55 @@
 // Phần tách của thẻ bài (`PostCard.tsx` ≤ 200 dòng): dòng meta dưới tên người đăng, gợi ý SHT, «Đã lưu báo giá».
 import type { PostView, QuoteMark } from "@ai/contracts/community";
+import type { ReactNode } from "react";
 import { isPartnerPost, sourceKey } from "../domain/feed-source";
 import { expiryNote, timeAgo } from "../domain/format";
 import { hintLines, savedText } from "../domain/quote";
-import { scopeLabel } from "../domain/scope-label";
+import { scopeIsInternal, scopeLabel } from "../domain/scope-label";
 import { t } from "../i18n";
-import { IconBox, IconCheck, IconLock } from "./icons";
+import { IconBox, IconCheck, IconLock, IconUsers } from "./icons";
 
 /** Công ty · nguồn · thời gian · phạm vi · nhãn trạng thái. */
-export function PostMeta({ p }: { p: PostView }) {
+export function PostMeta({ p, pill }: { p: PostView; pill?: ReactNode }) {
   const partner = isPartnerPost(p);
   const scope = partner ? null : scopeLabel(p);
   const expiry = expiryNote(p.expiresAt);
   return (
     <div className="meta">
-      <span data-testid="post-company">{p.authorOrgName}</span>
-      <span
-        className={`tag sm ${partner ? "soon" : "grey"}`}
-        data-testid="post-source"
-        data-source={sourceKey(p)}
-      >
-        {t(`community.feed.source.${sourceKey(p)}`)}
-      </span>{" "}
-      · {timeAgo(p.createdAt)}
-      {scope && (
-        <>
-          {" · "}
-          <IconLock size={12} />
-          {scope}
-        </>
-      )}
-      {p.edited && <span className="tag grey sm">{t("community.post.edited")}</span>}
-      {p.status === "archived" && (
-        <span className="tag grey sm">{t("community.post.archived")}</span>
-      )}
-      {p.status === "done" && <span className="tag ok sm">{t("community.post.done")}</span>}
-      {p.status === "expired" && <span className="tag late sm">{t("community.post.expired")}</span>}
-      {p.hidden && <span className="tag late sm">{t("community.post.hidden")}</span>}
-      {p.authorLeft && <span className="tag grey sm">{t("community.post.partnerLeft")}</span>}
-      {expiry && <span className="tag soon sm">{expiry}</span>}
+      <span className="mline">
+        <span data-testid="post-company">{p.authorOrgName}</span>
+        <span
+          className={`tag sm ${partner ? "soon" : "grey"}`}
+          data-testid="post-source"
+          data-source={sourceKey(p)}
+        >
+          {t(`community.feed.source.${sourceKey(p)}`)}
+        </span>
+      </span>
+      <span className="mline">
+        <span className="sep wide" aria-hidden="true" />
+        <span>{timeAgo(p.createdAt)}</span>
+        {scope && (
+          <>
+            <span className="sep" aria-hidden="true" />
+            <span className="scope" data-testid="post-scope">
+              {scopeIsInternal(p) ? <IconLock size={12} /> : <IconUsers size={12} />}
+              {scope}
+            </span>
+          </>
+        )}
+        {pill}
+        {p.edited && <span className="tag grey sm">{t("community.post.edited")}</span>}
+        {p.status === "archived" && (
+          <span className="tag grey sm">{t("community.post.archived")}</span>
+        )}
+        {p.status === "done" && <span className="tag ok sm">{t("community.post.done")}</span>}
+        {p.status === "expired" && (
+          <span className="tag late sm">{t("community.post.expired")}</span>
+        )}
+        {p.hidden && <span className="tag late sm">{t("community.post.hidden")}</span>}
+        {p.authorLeft && <span className="tag grey sm">{t("community.post.partnerLeft")}</span>}
+        {expiry && <span className="tag soon sm">{expiry}</span>}
+      </span>
     </div>
   );
 }

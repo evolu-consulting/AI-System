@@ -484,37 +484,6 @@
 
 /* ---------- CR-179 (UAT): điện thoại — đầu thẻ bài + ô đăng bài thu gọn không vỡ ---------- */
 @media (max-width: 560px) {
-  /* Đầu thẻ bài: hàng 1 = avatar · tên/meta · nút «…»; nhãn loại bài xuống hàng 2 dưới tên (tên không còn bị ép xuống 3 dòng). */
-  [data-mod="community"] .post .ph {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    column-gap: 10px;
-    row-gap: 6px;
-    align-items: start;
-    padding-left: 16px;
-  }
-  [data-mod="community"] .post .ph > .av {
-    grid-row: 1 / span 2;
-  }
-  [data-mod="community"] .post .ph > .who {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  [data-mod="community"] .post .ph > .pill {
-    grid-column: 2;
-    grid-row: 2;
-    justify-self: start;
-  }
-  [data-mod="community"] .post .ph > .iconbtn {
-    grid-column: 3;
-    grid-row: 1;
-  }
-  /* nút «Lưu báo giá» (chủ quản, bài bán) xuống hàng riêng cả bề ngang */
-  [data-mod="community"] .post .ph > button:not(.iconbtn) {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    justify-self: start;
-  }
   /* Ô đăng bài thu gọn: hàng 1 = avatar + ô gợi ý đủ rộng; hàng 2 = 3 nút loại bài chia đều, có chữ. */
   [data-mod="community"] .feedcomposer.collapsed {
     flex-wrap: wrap;
@@ -672,5 +641,86 @@
   }
   [data-mod="community"] .feedwrap {
     padding-bottom: 140px; /* đệm đáy: nút nổi không che bài cuối */
+  }
+}
+
+/* ---------- CR-195 BR-195-3/4: đầu thẻ bài 3 dòng, dấu «·» chỉ giữa hai phần tử cùng dòng ---------- */
+[data-mod="community"] .post .ph .nm {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+}
+[data-mod="community"] .post .ph .nm b {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-mod="community"] .post .ph .atitle {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-mod="community"] .post .ph .sep::before {
+  content: "·";
+  padding: 0 5px;
+}
+[data-mod="community"] .post .ph .meta .mline {
+  display: contents;
+}
+[data-mod="community"] .post .ph .meta .scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+@media (max-width: 640px) {
+  [data-mod="community"] .post .ph {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: start;
+    padding-left: 16px;
+  }
+  [data-mod="community"] .post .ph > .av {
+    grid-row: 1 / span 2;
+  }
+  [data-mod="community"] .post .ph > .who {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  [data-mod="community"] .post .ph > .acts {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  [data-mod="community"] .post .ph > button:not(.iconbtn) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: start;
+  }
+  [data-mod="community"] .post .ph .meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  [data-mod="community"] .post .ph .meta .mline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+  /* «·» đầu dòng 3 (giữa công ty và thời gian) chỉ có trên máy tính */
+  [data-mod="community"] .post .ph .sep.wide {
+    display: none;
+  }
+  [data-mod="community"] .post .ph .meta .sep::before {
+    padding: 0;
   }
 }

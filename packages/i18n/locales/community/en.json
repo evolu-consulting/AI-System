@@ -248,6 +248,8 @@
     },
     "post": {
       "view": "View",
+      "more": "More actions",
+      "textTruncated": "Long file: only the first 1 MB is shown. Click “Download” to see all.",
       "downloadOf": "Download {{name}}",
       "download": "Download",
       "imageViewer": "Image viewer",

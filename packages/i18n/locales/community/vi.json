@@ -248,6 +248,8 @@
     },
     "post": {
       "view": "Xem",
+      "more": "Thao tác khác",
+      "textTruncated": "Tệp dài: chỉ hiện phần đầu (1 MB). Bấm «Tải về» để xem đủ.",
       "downloadOf": "Tải về {{name}}",
       "download": "Tải về",
       "imageViewer": "Xem ảnh",

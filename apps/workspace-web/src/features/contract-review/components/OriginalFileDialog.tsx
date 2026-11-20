@@ -3,11 +3,11 @@
 
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
+import { viewerKind } from "@ai/web-kit/viewer-kind";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FilePreview } from "~/components/shared/file-viewer/FilePreview";
-import { viewerKind } from "~/components/shared/file-viewer/viewer-kind";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { fetchSourceText, sourceKey } from "~/features/contract-source/hooks/use-source-api";
 import {

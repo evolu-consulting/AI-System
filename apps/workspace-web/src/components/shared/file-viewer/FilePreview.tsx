@@ -1,9 +1,10 @@
 // CR-149 · phần "nội dung" dùng chung: nhận Blob đã tải (do nơi gọi lấy bằng route có kiểm quyền), chọn ảnh / PDF / Word / «Tải về».
 // pdf.js và docx-preview chỉ nạp khi gặp đúng loại (dynamic import trong từng pane).
+
+import { viewerKind } from "@ai/web-kit/viewer-kind";
 import { FileText } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { viewerKind } from "./viewer-kind";
 
 const PdfPane = lazy(() => import("./PdfPane"));
 const DocxPane = lazy(() => import("./DocxPane"));

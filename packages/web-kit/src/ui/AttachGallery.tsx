@@ -3,12 +3,12 @@ import {
   ATTACH_SIZE,
   type AttachItem,
   type AttachLabels,
+  canViewItem,
   formatBytes,
   imageLayout,
-  isPdfItem,
+  nameParts,
   splitAttachments,
   thumbFrame,
-  truncateMiddle,
 } from "../attach-layout";
 import { AttachViewer } from "./AttachViewer";
 import { FramedImage } from "./attach-frame";
@@ -194,6 +194,7 @@ export function FileCard({
   onView?: (a: AttachItem) => void;
 }) {
   const off = item.disabled === true;
+  const parts = nameParts(item.name);
   return (
     // button-gap-ok: khoảng cách nằm trong `cardStyle` (gap: 8, attach-parts.tsx)
     <li
@@ -210,22 +211,17 @@ export function FileCard({
     >
       <KindIcon mime={item.mime} name={item.name} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <span
-          className="fname"
-          style={{
-            fontWeight: 600,
-            overflow: "hidden",
-            whiteSpace: "nowrap",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {truncateMiddle(item.name)}
+        <span className="fname" style={{ fontWeight: 600, display: "flex", minWidth: 0 }}>
+          <span style={{ overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+            {parts.head}
+          </span>
+          {parts.tail && <span style={{ flex: "none", whiteSpace: "nowrap" }}>{parts.tail}</span>}
         </span>
         {item.size !== undefined && (
           <span style={{ opacity: 0.7, fontSize: 12 }}>{formatBytes(item.size, locale)}</span>
         )}
       </span>
-      {!off && onView && isPdfItem(item) && (
+      {!off && onView && canViewItem(item) && (
         <button type="button" data-testid="file-view" style={iconBtn} onClick={() => onView(item)}>
           {labels.view}
         </button>

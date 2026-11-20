@@ -1,5 +1,7 @@
 // CR-164 · bố cục ảnh + tệp đính kèm dùng chung (Community, Chat, sau này trò chuyện công ty). Logic thuần, không React.
 
+import { viewerKind } from "./viewer-kind";
+
 /** Một tệp đính kèm đã lên server. `disabled` = không tải được (xám). */
 export type AttachItem = {
   id: string;
@@ -30,6 +32,11 @@ export function fileKind(mime: string, name: string): FileKind {
 export const isImageItem = (a: AttachItem): boolean => !a.disabled && a.mime.startsWith("image/");
 export const isPdfItem = (a: AttachItem): boolean =>
   !a.disabled && fileKind(a.mime, a.name) === "pdf";
+/** CR-195 BR-195-6 · .txt/.csv/.md/.log ⇒ có nút «Xem» (cùng luật `viewerKind` của CR-194, một nguồn). */
+export const isTextItem = (a: AttachItem): boolean =>
+  !a.disabled && viewerKind(a.mime, a.name) === "text";
+/** Tệp có hộp «Xem» (bảng tin, tin nhắn). */
+export const canViewItem = (a: AttachItem): boolean => isPdfItem(a) || isTextItem(a);
 
 /** Tách ảnh (vẽ lưới) khỏi tệp (vẽ thẻ), giữ thứ tự. */
 export function splitAttachments(items: readonly AttachItem[]): {
@@ -72,6 +79,15 @@ export function truncateMiddle(name: string, max = 32): string {
   return `${name.slice(0, head)}…${name.slice(name.length - tail)}`;
 }
 
+/** CR-195 BR-195-5 · tách tên để CSS cắt GIỮA theo bề rộng thật: phần đầu co + «…», phần đuôi (3 ký tự cuối tên + đuôi) luôn hiện. */
+export function nameParts(name: string): { head: string; tail: string } {
+  const dot = name.lastIndexOf(".");
+  const extLen = dot > 0 && name.length - dot <= 6 ? name.length - dot : 0;
+  const tailLen = extLen + 3;
+  if (name.length <= tailLen + 6) return { head: name, tail: "" };
+  return { head: name.slice(0, name.length - tailLen), tail: name.slice(name.length - tailLen) };
+}
+
 /** 1536 ⇒ "1,5 KB" (dấu thập phân theo `locale`). */
 export function formatBytes(bytes: number, locale = "vi-VN"): string {
   const units = ["B", "KB", "MB", "GB"];
@@ -102,6 +118,8 @@ export type AttachLabels = {
   unavailable: string;
   /** CR-179 · «Đang tải…» trong hộp xem trước (không có ⇒ «…»). */
   loading?: string;
+  /** CR-195 · ghi chú ở hộp xem văn bản khi tệp > 1 MB (không có ⇒ không ghi chú). */
+  textTruncated?: string;
 };
 
 /** CR-173 · chữ của ô chọn tệp dùng chung (app truyền — web-kit không phụ thuộc i18n). */

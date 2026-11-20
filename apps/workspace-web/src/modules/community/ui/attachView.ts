@@ -32,6 +32,7 @@ export const attachLabels = (): AttachLabels => ({
   download: t("community.post.download"),
   downloadOf: (name) => t("community.post.downloadOf", { name }),
   view: t("community.post.view"),
+  textTruncated: t("community.post.textTruncated"),
   failed: t("community.post.downloadFailed"),
   uploading: t("community.composer.uploading"),
   retry: t("community.composer.retry"),
