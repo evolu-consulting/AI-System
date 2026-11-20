@@ -1,3 +1,4 @@
+// CR-195 BR-195-2: hộp nền trắng, các phần thẳng trên nền (không thẻ bọc, không thẻ «Ai thấy bài»); điện thoại: ô viết giãn, thanh dưới dính đáy (.composedlg trong mobile.css).
 // CR-191 BR-191-5/6/7/8 · đầu bảng tin chỉ MỘT dòng «Viết bài…» (avatar + ô giả) ⇒ hộp thoại (điện thoại toàn màn): loại bài Thông báo / Cần bán /
 // Cần mua; Thông báo không có hàng hoá; «Ai thấy bài» (chủ quản); «@» trong THÂN bài nhắc người — người công ty đã kết nối NGOÀI «Ai thấy bài»
 // ⇒ hỏi «Thêm <công ty> vào» / «Bỏ nhắc», chưa chọn ⇒ chưa đăng được. Không còn nút «Nhắc tên» riêng.
@@ -148,7 +149,10 @@ function ComposeBody({
   };
 
   return (
-    <div data-testid="composer-form" className="composer feedcomposer flex flex-col gap-3">
+    <div
+      data-testid="composer-form"
+      className="composer feedcomposer flex min-h-0 flex-1 flex-col gap-4"
+    >
       <fieldset className="seg" aria-label={t("community.composer.typeLabel")}>
         {types.map((ty) => (
           <button
@@ -166,7 +170,7 @@ function ComposeBody({
       <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
         {t("community.composer.bodyLabel")}
       </label>
-      <div className="relative">
+      <div className="composetext relative">
         <textarea
           ref={bodyRef}
           id="draft-body"
@@ -296,10 +300,15 @@ export function Composer({
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="sm:max-w-[640px] max-sm:h-dvh max-sm:max-h-dvh max-sm:max-w-none max-sm:rounded-none"
+          className="sm:max-w-[640px] max-sm:h-dvh max-sm:max-h-dvh max-sm:max-w-none max-sm:rounded-none max-sm:border-0 max-sm:pb-0"
           aria-describedby={undefined}
         >
-          <div data-mod="community" data-accent={brandAccent} data-testid="composer-dialog">
+          <div
+            data-mod="community"
+            data-accent={brandAccent}
+            data-testid="composer-dialog"
+            className="composedlg flex min-h-0 flex-1 flex-col gap-4"
+          >
             <DialogHeader>
               <DialogTitle>{t("community.composer.dialogTitle")}</DialogTitle>
             </DialogHeader>

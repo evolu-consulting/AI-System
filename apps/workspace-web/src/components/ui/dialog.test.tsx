@@ -57,3 +57,23 @@ describe("Dialog (CR-175)", () => {
     }
   });
 });
+
+describe("Dialog khung chung (CR-195 BR-195-1)", () => {
+  const read = (rel: string) => readFileSync(new URL(rel, import.meta.url), "utf8");
+  const kit = read("../../../../../packages/web-kit/src/ui/kit/dialog.tsx");
+  const ws = read("./dialog.tsx");
+
+  test("nền hộp là token card, không còn background", () => {
+    for (const src of [kit, ws]) {
+      expect(src).toContain("bg-card");
+      expect(src).not.toMatch(/border bg-background/);
+    }
+  });
+
+  test("lề ngang 24px, điện thoại 16px, đầu cách trên 20px", () => {
+    for (const src of [kit, ws]) {
+      expect(src).toContain("px-6 pt-5 pb-6");
+      expect(src).toContain("max-sm:px-4");
+    }
+  });
+});

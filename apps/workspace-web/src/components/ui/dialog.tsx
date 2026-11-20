@@ -38,14 +38,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 flex max-h-[90vh] w-full flex-col overflow-y-auto max-sm:max-h-[100dvh] max-sm:rounded-none max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border bg-background p-5 shadow-dialog duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-[520px]",
+          "fixed top-[50%] left-[50%] z-50 flex max-h-[90vh] w-full flex-col overflow-y-auto max-sm:max-h-[100dvh] max-sm:rounded-none max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border bg-card px-6 pt-5 pb-6 max-sm:px-4 shadow-dialog duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-[520px]",
           className,
         )}
         {...props}
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close className="absolute top-1 right-1 inline-flex size-11 items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-4">
+          <DialogPrimitive.Close className="absolute top-2.5 right-2.5 max-sm:right-1.5 inline-flex size-11 items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-4">
             <XIcon aria-hidden />
             <span className="sr-only">{t("contracts.common.close")}</span>
           </DialogPrimitive.Close>
@@ -65,12 +65,12 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-/** Thân cuộn riêng (CR-175): chỉ phần này cuộn, Header/Footer đứng yên. `-mx-5 px-5` để thanh cuộn nằm sát mép hộp. */
+/** Thân cuộn riêng (CR-175): chỉ phần này cuộn, Header/Footer đứng yên. `-mx-6 px-6` để thanh cuộn nằm sát mép hộp. */
 function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-body"
-      className={cn("-mx-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5", className)}
+      className={cn("-mx-6 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-6 max-sm:-mx-4 max-sm:px-4", className)}
       {...props}
     />
   );
@@ -90,7 +90,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-dialog-title leading-none font-semibold", className)}
+      className={cn("text-dialog-title leading-6 font-semibold", className)}
       {...props}
     />
   );

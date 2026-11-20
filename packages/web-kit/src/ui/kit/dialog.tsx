@@ -1,3 +1,4 @@
+// CR-195 BR-195-1: nền --card, lề ngang 24px (điện thoại 16px), đầu cách trên 20px, đầu–nội dung 16px (gap-4).
 // CR-177 U3 · Dialog chung (Radix). Khuôn CR-175: cao ≤ 90vh, Header/Footer cố định, chỉ DialogBody cuộn, Radix khoá cuộn nền, Esc đóng, giữ focus, trả focus về nút mở.
 import { XIcon } from "lucide-react";
 import { Dialog as P } from "radix-ui";
@@ -31,7 +32,7 @@ export function DialogOverlay({ className, ...props }: React.ComponentProps<type
 }
 
 export const DIALOG_CONTENT_CLASS =
-  "fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border bg-background p-6 shadow-lg outline-none sm:max-w-lg max-sm:max-h-[100dvh] max-sm:rounded-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
+  "fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border bg-card px-6 pt-5 pb-6 shadow-lg max-sm:px-4 outline-none sm:max-w-lg max-sm:max-h-[100dvh] max-sm:rounded-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
 
 export function DialogContent({
   className,
@@ -53,7 +54,7 @@ export function DialogContent({
         {showCloseButton && (
           <P.Close
             data-slot="dialog-close"
-            className="absolute top-6 right-4 flex size-6 items-center justify-center rounded-sm opacity-70 transition-opacity duration-[var(--duration-fast)] hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
+            className="absolute top-5 right-4 flex size-6 items-center justify-center rounded-sm opacity-70 transition-opacity duration-[var(--duration-fast)] hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
           >
             <XIcon />
             <span className="sr-only">{closeLabel}</span>
@@ -79,7 +80,10 @@ export function DialogBody({ className, ...props }: React.ComponentProps<"div">)
   return (
     <div
       data-slot="dialog-body"
-      className={cn("-mx-6 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-6", className)}
+      className={cn(
+        "-mx-6 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-6 max-sm:-mx-4 max-sm:px-4",
+        className,
+      )}
       {...props}
     />
   );

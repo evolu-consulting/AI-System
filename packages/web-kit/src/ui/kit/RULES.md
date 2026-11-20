@@ -64,3 +64,9 @@ Tám luật; mỗi luật một dòng + cái dùng. Máy kiểm: e2e `cr180-mobi
 ## Hộp thoại và chuyển trang — CR-193
 - BR-193-6: tiêu đề (`leading-6`) và nút «x» (ô 24×24, `flex items-center`) cùng một hàng 24px ⇒ canh giữa dọc; áp cho `DialogContent`/`SheetContent`, có hay không mô tả, điện thoại toàn màn. Sai: nút «x» `top-4` lệch so với tiêu đề.
 - BR-193-7: đổi đường dẫn ⇒ vùng cuộn chính về đầu, Back/Forward ⇒ khôi phục vị trí; chỉ đổi query (lọc, tab) ⇒ không nhảy. Dùng `routerScrollOptions()` (`scroll-policy.ts`) khi tạo router; vùng cuộn chính của Shell gắn `data-scroll-restoration-id="main-scroll"`.
+
+## Hộp thoại — CR-195 (BR-195-1)
+1. Nền hộp `--card` (sáng trắng, tối theo token). Sai: `bg-background`/`bg-muted`.
+2. Lề ngang 24px (điện thoại 16px), đầu cách trên 20px, đầu–nội dung 16px (`gap-4`), nội dung–chân 24px. Đã nằm sẵn trong `DialogContent`; không tự thêm `p-*` cho hộp.
+3. Không thẻ trong hộp: nội dung đứng thẳng trên nền hộp, ngăn bằng khoảng trống 16px hoặc đường kẻ mảnh. Sai: bọc cả form trong khung nền xám + viền + bóng; «Ai thấy bài» lồng thêm khung. Ngoại lệ: ô nhập liệu.
+4. Điện thoại: hộp toàn màn, ô nhập chính giãn hết chỗ trống, nút hành động dính đáy, chừa `env(safe-area-inset-bottom)`.

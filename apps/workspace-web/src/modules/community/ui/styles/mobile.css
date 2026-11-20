@@ -78,3 +78,56 @@
 [data-mod="community"] .ctypes[hidden] {
   display: none;
 }
+
+/* CR-195 BR-195-2 · hộp «Viết bài»: nền trắng của hộp, không thẻ lồng (bỏ bóng/nền/viền của .feedcomposer và .audbox); các phần ngăn bằng khoảng trống. */
+[data-mod="community"] .composedlg .feedcomposer {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+[data-mod="community"] .composedlg .audbox {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+[data-mod="community"] .composedlg .feedcomposer .cbar {
+  border-top: 0;
+  padding-top: 0;
+}
+[data-mod="community"] .composedlg .composetext textarea {
+  min-height: 140px;
+  background: var(--card);
+}
+@media (max-width: 640px) {
+  [data-mod="community"] .composedlg .composetext {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 120px;
+  }
+  [data-mod="community"] .composedlg .composetext textarea {
+    flex: 1;
+    min-height: 100%;
+    resize: none;
+  }
+  /* «Ai thấy bài»: nhãn + ô chọn cùng một hàng gọn */
+  [data-mod="community"] .composedlg .audbox {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 12px;
+  }
+  [data-mod="community"] .composedlg .audbox > :nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+  /* thanh dưới (📎 + «Đăng bài») dính đáy, chừa vùng an toàn của máy */
+  [data-mod="community"] .composedlg .feedcomposer .cbar {
+    position: sticky;
+    bottom: 0;
+    flex-wrap: nowrap;
+    background: var(--card);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  }
+}
