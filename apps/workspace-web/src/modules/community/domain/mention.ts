@@ -11,6 +11,21 @@ export type DraftMention = {
   outside?: boolean;
 };
 
+/** Người được chọn trong danh sách thả «@» ⇒ chip nháp. */
+export const toMention = (o: {
+  userId: string;
+  name: string;
+  orgName?: string | undefined;
+  tenantId?: string | undefined;
+  outside?: boolean | undefined;
+}): DraftMention => ({
+  userId: o.userId,
+  name: o.name,
+  ...(o.orgName ? { orgName: o.orgName } : {}),
+  ...(o.tenantId ? { tenantId: o.tenantId } : {}),
+  ...(o.outside ? { outside: true } : {}),
+});
+
 /** Loại bài mặc định: chủ quản (được đăng «Thông báo») ⇒ `note`; đối tác ⇒ loại đầu tiên được phép. */
 export const defaultPostType = (allowed: readonly PostType[]): PostType =>
   allowed.includes("note") ? "note" : (allowed[0] ?? "sell");

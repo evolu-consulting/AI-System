@@ -20,10 +20,8 @@ test("CR145-P1 · chủ quản: ô soạn mặc định «Thông báo»; nhắc 
   await p.goto("/community");
   const dlg = await openComposer(p); // CR-191: «Viết bài…» ⇒ hộp thoại; loại mặc định «Thông báo» (nút có class «on»)
   await expect(dlg.locator('.seg button[data-type="note"]')).toHaveClass("on");
-  await openMentionFromBody(p, dlg, TITLE); // gõ «@» trong thân bài ⇒ hộp «Nhắc tên» (không còn nút riêng)
-  await p.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Tân Phát");
+  await openMentionFromBody(p, dlg, TITLE); // gõ «@» trong thân bài ⇒ danh sách thả tại chỗ (không còn hộp/nút «Nhắc tên»)
   await p.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first().click();
-  await p.getByTestId("mention-done").click();
   await expect(p.getByTestId("mention-chip")).toHaveCount(1);
   await dlg.getByRole("button", { name: "Đăng bài" }).click();
   await expect(postByTitle(p, TITLE).getByTestId("post-mentions")).toContainText("Nhắc:");

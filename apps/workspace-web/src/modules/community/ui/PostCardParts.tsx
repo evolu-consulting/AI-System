@@ -3,12 +3,14 @@ import type { PostView, QuoteMark } from "@ai/contracts/community";
 import { isPartnerPost, sourceKey } from "../domain/feed-source";
 import { expiryNote, timeAgo } from "../domain/format";
 import { hintLines, savedText } from "../domain/quote";
+import { scopeLabel } from "../domain/scope-label";
 import { t } from "../i18n";
 import { IconBox, IconCheck, IconLock } from "./icons";
 
 /** Công ty · nguồn · thời gian · phạm vi · nhãn trạng thái. */
 export function PostMeta({ p }: { p: PostView }) {
   const partner = isPartnerPost(p);
+  const scope = partner ? null : scopeLabel(p);
   const expiry = expiryNote(p.expiresAt);
   return (
     <div className="meta">
@@ -21,11 +23,11 @@ export function PostMeta({ p }: { p: PostView }) {
         {t(`community.feed.source.${sourceKey(p)}`)}
       </span>{" "}
       · {timeAgo(p.createdAt)}
-      {!partner && (
+      {scope && (
         <>
           {" · "}
           <IconLock size={12} />
-          {p.authorSide === "host" ? t("community.post.friends") : t("community.post.hostOnly")}
+          {scope}
         </>
       )}
       {p.edited && <span className="tag grey sm">{t("community.post.edited")}</span>}

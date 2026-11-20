@@ -23,14 +23,14 @@ export async function openComposer(page: Page, type?: string): Promise<Locator> 
   return dlg;
 }
 
-/** Gõ «@» trong thân bài ⇒ hộp «Nhắc tên» (`mention-dialog`) mở. */
+/** Gõ «@» trong thân bài ⇒ danh sách thả tại chỗ (`mention-suggest`) mở (CR-193: không còn hộp «Nhắc tên»). */
 export async function openMentionFromBody(
   page: Page,
   dlg: Locator,
   lead = "Nhờ",
 ): Promise<Locator> {
   await dlg.locator("#draft-body").fill(`${lead} @`);
-  const m = page.getByTestId("mention-dialog");
+  const m = page.getByTestId("mention-suggest");
   await expect(m).toBeVisible();
   return m;
 }

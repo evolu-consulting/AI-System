@@ -75,11 +75,13 @@ export function createHttpApi(): CommunityApi {
     setCompanyCover: async (cover) => {
       await api(`${BASE}/brand/cover`, { method: "PUT", body: { cover } });
     },
+    // CR-193: nguồn là chính gói Community (`audience-connected`), cùng danh sách với «Ai thấy bài» — không gọi sang gói Hợp đồng
+    // (cần quyền gói đó, lỗi bị nuốt ⇒ bộ lọc mất «Đối tác» và từng công ty).
     listConnected: () =>
-      api<{ items: { tenant_id: string; legal_name: string }[] }>(
-        "/pack/contracts/connect/links?status=connected&limit=50",
-      ).then(
-        (r) => r.items.map((c) => ({ id: c.tenant_id, name: c.legal_name })),
+      api<{ tenantId: string; name: string }[]>(`${BASE}/audience-connected`, {
+        query: { mode: "all" },
+      }).then(
+        (r) => r.map((c) => ({ id: c.tenantId, name: c.name })),
         () => [],
       ),
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),

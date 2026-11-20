@@ -229,6 +229,7 @@
       "mentionGroupPartner": "Partners",
       "mentionGroupCustomer": "Customers",
       "mentionLoading": "Loading…",
+      "mentionSuggest": "People to mention",
       "mentionRemove": "Remove {{name}}",
       "mentionShown": "Mentioned: {{names}}",
       "mentionNotAllowed": "You can only mention people who can see this post",

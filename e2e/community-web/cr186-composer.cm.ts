@@ -41,42 +41,35 @@ test.describe("CR-186 · điện thoại 390px", () => {
     expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
   });
 
-  test("hộp Nhắc tên: dòng cao ≥ 44px, bộ lọc nhóm không tràn", async ({ page }) => {
+  test("danh sách thả «@»: dòng cao ≥ 44px, không tràn ngang", async ({ page }) => {
     await openComposerPref(page);
     await page.goto("/community");
     await openMentionFromBody(page, await openComposer(page, "Cần bán"));
-    const dlg = page.getByTestId("mention-dialog");
-    const rows = dlg.getByTestId("mention-option");
+    const list = page.getByTestId("mention-suggest");
+    const rows = list.getByTestId("mention-option");
     await expect(rows.first()).toBeVisible();
     for (let i = 0; i < (await rows.count()); i++) {
       expect((await rows.nth(i).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
     }
-    const g = await dlg.getByTestId("mention-group").boundingBox();
+    const g = await list.boundingBox();
     expect((g?.x ?? 0) + (g?.width ?? 0)).toBeLessThanOrEqual(390);
   });
 });
 
 test.describe("CR-186 · máy tính", () => {
-  test("Nhắc tên: lọc nhóm Tất cả · Nội bộ · Đối tác · Khách hàng + tìm tên", async ({ page }) => {
+  test("«@» trong thân bài: danh sách thả đủ 6 người, gõ tên lọc, chọn ⇒ chip", async ({
+    page,
+  }) => {
     await page.goto("/community");
-    await openMentionFromBody(page, await openComposer(page, "Cần bán"));
-    const dlg = page.getByTestId("mention-dialog");
-    const rows = dlg.getByTestId("mention-option");
-    await expect(rows).toHaveCount(6); // Tất cả = 4 người công ty mình + 2 người công ty đã kết nối (CR-191)
-    await dlg.getByRole("combobox", { name: "Nhóm người" }).click();
-    for (const name of ["Tất cả", "Nội bộ", "Đối tác", "Khách hàng"])
-      await expect(page.getByRole("option", { name, exact: true })).toBeVisible();
-    await page.getByRole("option", { name: "Khách hàng", exact: true }).click();
+    const comp = await openComposer(page, "Cần bán");
+    await openMentionFromBody(page, comp);
+    const rows = page.getByTestId("mention-option");
+    await expect(rows).toHaveCount(6); // 4 người công ty mình + 2 người công ty đã kết nối (CR-191)
+    await comp.locator("#draft-body").pressSequentially("Trần");
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText("Trần B");
     await expect(rows.first()).toContainText("Công ty TNHH ABC");
-    await dlg.getByRole("combobox", { name: "Nhóm người" }).click();
-    await page.getByRole("option", { name: "Nội bộ", exact: true }).click();
-    await expect(rows).toHaveCount(2);
-    await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Lan");
-    await expect(rows).toHaveCount(1);
-    await rows.first().getByRole("checkbox").check();
-    await dlg.getByRole("button", { name: "Xong (1 người)" }).click();
+    await rows.first().click();
     await expect(page.getByTestId("mention-chip")).toHaveCount(1);
   });
 

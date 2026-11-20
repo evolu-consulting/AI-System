@@ -29,6 +29,17 @@ export function activeMention(
   return { start: at, query };
 }
 
+/** Chọn người trong danh sách thả: thay «@chữ đã gõ» bằng «@Tên » ; trả chữ mới + vị trí con trỏ. */
+export function applyMention(
+  text: string,
+  at: { start: number; query: string },
+  name: string,
+): { text: string; caret: number } {
+  const ins = `@${name} `;
+  const end = at.start + 1 + at.query.length;
+  return { text: text.slice(0, at.start) + ins + text.slice(end), caret: at.start + ins.length };
+}
+
 export type TextPart = { text: string; mention: boolean };
 
 /** Tách bình luận đã gửi thành đoạn thường / đoạn `@Tên` (tên dài nhất khớp trước) để tô đậm. */

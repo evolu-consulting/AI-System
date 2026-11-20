@@ -6,10 +6,11 @@ import type { PostAudience, PostType } from "@ai/contracts/community";
 import { attachPickLabels } from "@ai/web-kit/attach-layout";
 import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
 import { Button } from "@ai/web-kit/ui/kit/button";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { uploadFiles } from "../application/attach";
 import { useApp } from "../application/ctx";
+import { useMentionSuggest } from "../application/useMentionSuggest";
 import { addCompany, audienceError, partnerNote } from "../domain/audience";
 import { type Draft, draftErrors, emptyDraft, toCreateInput } from "../domain/compose";
 import { initials } from "../domain/format";
@@ -19,14 +20,16 @@ import {
   mentionScope,
   mentionsInBody,
   stripMention,
+  toMention,
 } from "../domain/mention";
-import { activeMention } from "../domain/thread";
+import { applyMention } from "../domain/thread";
 import { t } from "../i18n";
 import { ALL_AUDIENCE, AudienceField } from "./AudienceField";
 import { DraftAttachments } from "./DraftAttachments";
 import { DraftFields } from "./DraftFields";
 import { IconLock } from "./icons";
-import { MentionChips, MentionPicker } from "./MentionPicker";
+import { MentionChips } from "./MentionChips";
+import { MentionSuggest } from "./MentionSuggest";
 
 const typeLabel = (x: PostType): string => t(`community.postType.${x}`);
 
@@ -82,8 +85,10 @@ function ComposeBody({
   const [cats, setCats] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [pickOpen, setPickOpen] = useState(false);
   const aud: PostAudience = draft.audience ?? ALL_AUDIENCE;
+  const sg = useMentionSuggest(mentionScope({ ...draft, audience: aud }));
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const sugId = useId();
 
   useEffect(() => {
     api.listCats().then(setCats, () => undefined);
@@ -123,15 +128,23 @@ function ComposeBody({
       setUploading(false);
     }
   };
-  const addMentions = (next: DraftMention[]) => {
-    const added = next.filter((n) => !draft.mentions.some((m) => m.userId === n.userId));
+  /** Chọn người ở dòng `i` của danh sách thả «@»: «@chữ» ⇒ «@Tên », thêm chip nhắc (người ngoài «Ai thấy bài» ⇒ hỏi bên dưới). */
+  const pick = (i: number) => {
+    const p = sg.people[i];
+    if (!p || !sg.at) return;
+    const r = applyMention(draft.body, sg.at, p.name);
     setDraft((d) => ({
       ...d,
-      mentions: next,
-      body: added.length
-        ? `${d.body}${d.body && !d.body.endsWith(" ") ? " " : ""}${added.map((n) => `@${n.name}`).join(" ")} `
-        : d.body,
+      body: r.text,
+      mentions: d.mentions.some((m) => m.userId === p.userId)
+        ? d.mentions
+        : [...d.mentions, toMention(p)],
     }));
+    sg.close();
+    requestAnimationFrame(() => {
+      bodyRef.current?.focus();
+      bodyRef.current?.setSelectionRange(r.caret, r.caret);
+    });
   };
 
   return (
@@ -153,20 +166,34 @@ function ComposeBody({
       <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
         {t("community.composer.bodyLabel")}
       </label>
-      <textarea
-        id="draft-body"
-        placeholder={t("community.composer.bodyPlaceholder")}
-        value={draft.body}
-        onChange={(e) => {
-          const v = e.target.value;
-          // gõ «@» đầu từ ⇒ mở danh sách người, bỏ dấu «@» vừa gõ (người chọn xong ⇒ «@Tên» vào chữ)
-          const at = activeMention(v, e.target.selectionStart ?? v.length);
-          if (at && at.query === "") {
-            setDraft({ ...draft, body: v.slice(0, at.start) + v.slice(at.start + 1) });
-            setPickOpen(true);
-          } else setDraft({ ...draft, body: v });
-        }}
-      />
+      <div className="relative">
+        <textarea
+          ref={bodyRef}
+          id="draft-body"
+          aria-controls={sg.open ? sugId : undefined}
+          placeholder={t("community.composer.bodyPlaceholder")}
+          value={draft.body}
+          onChange={(e) => {
+            setDraft({ ...draft, body: e.target.value });
+            sg.update(e.target.value, e.target.selectionStart ?? e.target.value.length);
+          }}
+          onBlur={sg.close}
+          onKeyDown={(e) => {
+            sg.onKeyDown(e, pick);
+          }}
+        />
+        {sg.open && (
+          <MentionSuggest
+            id={sugId}
+            people={sg.people}
+            state={sg.state}
+            index={sg.index}
+            onHover={sg.setIndex}
+            onPick={(p) => pick(sg.people.indexOf(p))}
+            placement="below"
+          />
+        )}
+      </div>
       {errors.body && <div className="ferr">{errors.body}</div>}
       {draft.type !== "note" && (
         <DraftFields draft={draft} set={setDraft} errors={errors} cats={cats} />
@@ -240,14 +267,6 @@ function ComposeBody({
           {t("community.composer.publish")}
         </Button>
       </div>
-      <MentionPicker
-        hideButton
-        mentions={draft.mentions}
-        onChange={addMentions}
-        scope={mentionScope({ ...draft, audience: aud })}
-        open={pickOpen}
-        onOpenChange={setPickOpen}
-      />
     </div>
   );
 }

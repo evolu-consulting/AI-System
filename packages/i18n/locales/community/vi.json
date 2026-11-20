@@ -229,6 +229,7 @@
       "mentionGroupPartner": "Đối tác",
       "mentionGroupCustomer": "Khách hàng",
       "mentionLoading": "Đang tải…",
+      "mentionSuggest": "Gợi ý người nhắc",
       "mentionRemove": "Bỏ nhắc {{name}}",
       "mentionShown": "Nhắc: {{names}}",
       "mentionNotAllowed": "Chỉ nhắc được người xem được bài này",

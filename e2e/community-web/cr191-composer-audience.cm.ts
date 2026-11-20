@@ -66,12 +66,11 @@ test("«@» trong thân bài: nhắc người công ty kết nối ngoài «Ai t
   const dlg = await open(page);
   await pickAudience(page, "Chỉ nội bộ");
   await dlg.locator("#draft-body").fill("Nhờ @");
-  await expect(page.getByTestId("mention-dialog")).toBeVisible();
+  await expect(page.getByTestId("mention-suggest")).toBeVisible();
   const row = page.getByTestId("mention-option").filter({ hasText: "Phạm Thu Hà" });
   await expect(row).toContainText("Trưởng phòng mua hàng"); // chức vụ
   await expect(row).toContainText("Công ty Cổ phần Xanh"); // công ty
   await row.click();
-  await page.getByTestId("mention-done").click();
   await expect(dlg.locator("#draft-body")).toHaveValue(/@Phạm Thu Hà/);
   await expect(dlg.getByTestId("mention-outside")).toContainText(
     "Công ty Cổ phần Xanh chưa nằm trong «Ai thấy bài»",
@@ -92,7 +91,6 @@ test("«@» ngoài «Ai thấy bài»: Bỏ nhắc ⇒ gỡ «@Tên» khỏi th�
   await pickAudience(page, "Chỉ nội bộ");
   await dlg.locator("#draft-body").fill("Xin chào @");
   await page.getByTestId("mention-option").filter({ hasText: "Lê Văn Nam" }).click();
-  await page.getByTestId("mention-done").click();
   await dlg.getByTestId("mention-drop").click();
   await expect(dlg.getByTestId("mention-outside")).toHaveCount(0);
   await expect(dlg.locator("#draft-body")).not.toHaveValue(/@Lê Văn Nam/);
@@ -106,4 +104,16 @@ test("điện thoại: hộp soạn bài toàn màn", async ({ page }) => {
   if (!box) throw new Error("không có khung");
   expect(box.width).toBeGreaterThanOrEqual(388);
   expect(box.height).toBeGreaterThanOrEqual(770);
+});
+
+// CR-193 UAT 1 · nhãn phạm vi ở đầu bài = «Ai thấy bài» thật của bài (BR-191-7), không phải «Bạn bè».
+test("bài «Chỉ nội bộ» hiện nhãn «Chỉ nội bộ» ở đầu bài, không hiện «Bạn bè»", async ({ page }) => {
+  const dlg = await open(page);
+  await dlg.locator("#draft-body").fill("Thông báo nội bộ CR193");
+  await pickAudience(page, "Chỉ nội bộ");
+  await dlg.getByRole("button", { name: "Đăng bài" }).click();
+  const post = page.getByTestId("post").filter({ hasText: "Thông báo nội bộ CR193" }).first();
+  await expect(post).toBeVisible();
+  await expect(post.locator(".meta")).toContainText("Chỉ nội bộ");
+  await expect(post.locator(".meta")).not.toContainText("Bạn bè");
 });

@@ -48,3 +48,15 @@ export const canReportPost = (
   p: Pick<PostView, "source" | "authorOrgId">,
   viewerOrgId: string,
 ): boolean => !isPartnerPost(p) && p.authorOrgId !== viewerOrgId;
+
+/** CR-193 · các nguồn trong bộ lọc: Tất cả · Công ty mình · Đối tác (luôn có) · từng công ty đã kết nối. */
+export function sourceChoices(
+  connected: readonly { id: string; name: string }[],
+): { value: SourcePick; label: string | null; name?: string }[] {
+  return [
+    { value: "", label: "community.feed.filter.sourceAll" },
+    { value: "own", label: "community.feed.source.own" },
+    { value: "connected", label: "community.feed.source.connected" },
+    ...connected.map((c) => ({ value: c.id, label: null, name: c.name })),
+  ];
+}

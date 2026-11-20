@@ -64,12 +64,11 @@ test("CR129-M1 · chủ quản bình luận ngay trên bài của mình, gõ @ m
   // CR-186: «@» mở chung hộp «Nhắc tên» (nhắc NGƯỜI, thay popover nhắc công ty cũ); chọn một người công ty Tân Phát ⇒ «@Tên» vào chữ.
   await box(h).click();
   await box(h).pressSequentially("@");
-  const dlg0 = h.getByTestId("mention-dialog");
-  await expect(dlg0).toBeVisible();
-  const opt = dlg0.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first();
+  const list0 = h.getByTestId("mention-suggest");
+  await expect(list0).toBeVisible();
+  const opt = list0.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first();
   await expect(opt).toBeVisible();
-  await opt.getByRole("checkbox").check();
-  await dlg0.getByRole("button", { name: /^Xong/ }).click();
+  await opt.click();
   await expect(box(h)).toHaveValue(/@\S/);
   await box(h).pressSequentially(` ${C_HOST}`);
   await thread(h).getByRole("button", { name: "Gửi bình luận" }).click();

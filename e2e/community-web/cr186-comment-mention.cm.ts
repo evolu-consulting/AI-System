@@ -2,7 +2,7 @@
 // Adapter mock (persona mặc định = chủ quản).
 import { expect, test } from "@playwright/test";
 
-test("gõ «@» ở ô bình luận ⇒ hộp «Nhắc tên» có lọc nhóm + tìm, chọn người ⇒ «@Tên» vào chữ, gửi ⇒ bình luận hiện «@Tên»", async ({
+test("gõ «@» ở ô bình luận ⇒ danh sách thả tại chỗ (avatar, tên, chức vụ · công ty), gõ tên lọc, chọn ⇒ «@Tên» vào chữ, gửi ⇒ bình luận hiện «@Tên»", async ({
   page,
 }) => {
   await page.goto("/community");
@@ -10,31 +10,29 @@ test("gõ «@» ở ô bình luận ⇒ hộp «Nhắc tên» có lọc nhóm + 
   const box = card.getByRole("combobox", { name: "Viết bình luận" });
   await box.fill("Nhờ ");
   await box.pressSequentially("@");
-  const dlg = page.getByTestId("mention-dialog");
-  await expect(dlg).toBeVisible();
-  // hộp là hộp thoại modal ⇒ nền bị aria-hidden: tìm ô theo includeHidden
-  const hidden = card.getByRole("combobox", { name: "Viết bình luận", includeHidden: true });
-  await expect(hidden).toHaveValue("Nhờ "); // dấu «@» vừa gõ không nằm lại trong chữ
-  await expect(dlg.getByRole("combobox", { name: "Nhóm người" })).toContainText("Tất cả");
-  await expect(dlg.getByRole("searchbox", { name: "Tìm theo tên" })).toBeVisible();
-  await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Lan");
-  await expect(dlg.getByTestId("mention-option")).toHaveCount(1);
-  await dlg.getByTestId("mention-option").first().getByRole("checkbox").check();
-  await dlg.getByRole("button", { name: "Xong (1 người)" }).click();
-  await expect(box).toHaveValue(/@Lan/);
+  const list = card.getByTestId("mention-suggest");
+  await expect(list).toBeVisible();
+  await expect(page.getByTestId("mention-dialog")).toHaveCount(0); // CR-193: không hộp thoại, không ô tích
+  await box.pressSequentially("Lan");
+  await expect(list.getByTestId("mention-option")).toHaveCount(1);
+  await list.getByTestId("mention-option").first().click();
+  await expect(box).toHaveValue(/Nhờ @Lan/);
+  await expect(list).toHaveCount(0);
   await card.getByRole("button", { name: "Gửi bình luận" }).click();
   await expect(card.getByText(/@Lan/)).toBeVisible();
 });
 
-test("gõ «@» ở ô bình luận mở cùng hộp; lọc «Khách hàng» chỉ còn người công ty khách hàng", async ({
-  page,
-}) => {
+test("«@» ở ô bình luận: Esc đóng danh sách; gõ tên + Enter chọn người", async ({ page }) => {
   await page.goto("/community");
   const card = page.locator('[data-post-id="p1"]');
-  await card.getByRole("combobox", { name: "Viết bình luận" }).pressSequentially("@"); // CR-193: không còn nút «Nhắc tên», chỉ gõ @
-  const dlg = page.getByTestId("mention-dialog");
-  await dlg.getByRole("combobox", { name: "Nhóm người" }).click();
-  await page.getByRole("option", { name: "Khách hàng", exact: true }).click();
-  await expect(dlg.getByTestId("mention-option")).toHaveCount(1);
-  await expect(dlg.getByTestId("mention-option").first()).toContainText("Trần B");
+  const box = card.getByRole("combobox", { name: "Viết bình luận" });
+  await box.fill("");
+  await box.pressSequentially("@");
+  await expect(card.getByTestId("mention-suggest")).toBeVisible();
+  await box.press("Escape");
+  await expect(card.getByTestId("mention-suggest")).toHaveCount(0);
+  await box.pressSequentially("Trần");
+  await expect(card.getByTestId("mention-option").first()).toContainText("Trần B");
+  await box.press("Enter");
+  await expect(box).toHaveValue(/@Trần B/);
 });

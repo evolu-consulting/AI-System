@@ -15,7 +15,7 @@ import { useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import type { ConnectedCompany } from "../application/ports";
 import type { useFeedFilters } from "../application/useFeed";
-import { activeFilterCount, sourceCount, typeCount } from "../domain/feed-source";
+import { activeFilterCount, sourceChoices, sourceCount, typeCount } from "../domain/feed-source";
 import { t } from "../i18n";
 import { IconFilter } from "./icons";
 
@@ -124,10 +124,9 @@ export function FeedFilterSheet({
               </div>
               <h3>{t("community.feed.filter.source")}</h3>
               <div className="chips tight">
-                {src("", t("community.feed.filter.sourceAll"))}
-                {src("own", t("community.feed.source.own"))}
-                {connected.length > 0 && src("connected", t("community.feed.source.connected"))}
-                {connected.map((c) => src(c.id, c.name))}
+                {sourceChoices(connected).map((c) =>
+                  src(c.value, c.label ? t(c.label) : (c.name ?? "")),
+                )}
               </div>
               {data && (
                 <div className="selrow">

@@ -190,5 +190,18 @@ test("CR193 · bình luận: không có nút «Nhắc tên», gõ @ vẫn mở h
   await expect(box).toBeVisible();
   await expect(card.getByRole("button", { name: "Nhắc tên" })).toHaveCount(0);
   await box.pressSequentially("@");
-  await expect(page.getByTestId("mention-dialog")).toBeVisible();
+  await expect(card.getByTestId("mention-suggest")).toBeVisible(); // danh sách thả tại chỗ, không hộp thoại
+  await expect(page.getByTestId("mention-dialog")).toHaveCount(0);
+});
+
+// CR-193 UAT 7 · «Lọc» có đủ nguồn: Tất cả · Công ty mình · Đối tác · từng công ty đã kết nối (lấy từ gói Community, cùng nguồn «Ai thấy bài»).
+test("CR193 · Lọc: có «Đối tác» và từng công ty đã kết nối", async ({ page }) => {
+  await page.goto("/community");
+  await openFilter(page);
+  const sheet = page.getByTestId("feed-filter-sheet");
+  for (const id of ["all", "own", "connected", CONNECTED_A])
+    await expect(sheet.getByTestId(`filter-source-${id}`)).toBeVisible();
+  await sheet.getByTestId("filter-source-connected").click();
+  await expect(posts(page).first()).toBeVisible();
+  await expect(page.getByTestId("post-source").first()).toHaveAttribute("data-source", "connected");
 });

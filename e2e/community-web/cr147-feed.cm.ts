@@ -51,25 +51,23 @@ test("sửa bài: bớt một tệp, thêm một tệp, lưu ⇒ thẻ tệp đ�
   await expect(card.getByText("moi.pdf")).toBeVisible();
 });
 
-test("hộp Nhắc tên (mở bằng gõ «@» trong thân bài): tìm, chọn 2 người, «Xong (2 người)» ⇒ chip ở hộp soạn; Huỷ không đổi", async ({
+test("«@» trong thân bài: danh sách thả tại chỗ, gõ tên lọc, chọn 2 người ⇒ 2 chip ở hộp soạn", async ({
   page,
 }) => {
   await page.goto("/community");
   const comp = await openComposer(page, "Cần bán");
-  await expect(page.getByTestId("mention-people")).toHaveCount(0); // không còn ô gõ tên cũ
+  await expect(page.getByTestId("mention-people")).toHaveCount(0); // chưa nhắc ai
   await expect(comp.getByRole("button", { name: "Nhắc tên" })).toHaveCount(0); // CR-191: không còn nút riêng
+  const body = comp.locator("#draft-body");
   await openMentionFromBody(page, comp);
-  const dlg = page.getByTestId("mention-dialog");
-  await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Lan");
-  await expect(dlg.getByTestId("mention-option")).toHaveCount(1);
-  await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("");
-  await dlg.getByTestId("mention-option").filter({ hasText: "Lan" }).getByRole("checkbox").check();
-  await dlg.getByTestId("mention-option").filter({ hasText: "Minh" }).getByRole("checkbox").check();
-  await dlg.getByRole("button", { name: "Xong (2 người)" }).click();
+  await expect(page.getByTestId("mention-dialog")).toHaveCount(0); // CR-193: không hộp thoại
+  await body.pressSequentially("Lan");
+  await expect(page.getByTestId("mention-option")).toHaveCount(1);
+  await page.getByTestId("mention-option").filter({ hasText: "Lan" }).click();
+  await body.pressSequentially("@Minh");
+  await page.getByTestId("mention-option").filter({ hasText: "Minh" }).click();
   await expect(page.getByTestId("mention-chip")).toHaveCount(2);
-  await comp.locator("#draft-body").pressSequentially(" @"); // gõ thêm «@» cuối thân (còn tên 2 người) ⇒ mở lại hộp, Huỷ ⇒ giữ nguyên 2 người
-  await page.getByTestId("mention-dialog").getByRole("button", { name: "Huỷ" }).click();
-  await expect(page.getByTestId("mention-chip")).toHaveCount(2);
+  await expect(body).toHaveValue(/@Lan.*@Minh/);
 });
 
 // CR-191 · bảng tin một cột: ô đăng bài và thẻ bài cùng một cột (cùng mép trái/phải), không còn thẻ «Bộ lọc» bên phải.
