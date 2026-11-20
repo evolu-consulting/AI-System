@@ -111,6 +111,7 @@
       "download": "Download",
       "loading": "Opening file…",
       "docxTitle": "Word file content",
+      "textTruncated": "Long file: only the first 1 MB is shown. Click “Download” to see all.",
       "error": "Could not open this file.",
       "noPreview": "This file type cannot be previewed. Click “Download” to open it on your computer.",
       "zoomIn": "Zoom in",

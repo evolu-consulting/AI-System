@@ -111,6 +111,7 @@
       "download": "Tải về",
       "loading": "Đang mở tệp…",
       "docxTitle": "Nội dung tệp Word",
+      "textTruncated": "Tệp dài: chỉ hiện phần đầu (1 MB). Bấm «Tải về» để xem đủ.",
       "error": "Không mở được tệp này.",
       "noPreview": "Loại tệp này chưa xem trước được. Bấm «Tải về» để mở bằng phần mềm trên máy.",
       "zoomIn": "Phóng to",

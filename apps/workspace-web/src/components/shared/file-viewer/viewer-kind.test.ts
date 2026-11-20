@@ -27,3 +27,15 @@ describe("viewerKind (CR-149)", () => {
     expect(viewerKind("text/html", "a.pdf")).toBe("other"); // mime cụ thể thắng đuôi
   });
 });
+
+describe("viewerKind văn bản (CR-194)", () => {
+  test("text/plain, csv, markdown và đuôi .txt/.csv/.md/.log ⇒ text, HTML vẫn là other", () => {
+    for (const m of ["text/plain", "text/plain; charset=utf-8", "text/csv", "text/markdown"])
+      expect(viewerKind(m, "a.bin")).toBe("text");
+    for (const n of ["a.TXT", "b.csv", "c.md", "d.log"])
+      expect(viewerKind("application/octet-stream", n)).toBe("text");
+    expect(viewerKind("", "x.txt")).toBe("text");
+    expect(viewerKind("text/html", "a.txt")).toBe("other");
+    expect(viewerKind("text/html", "a.html")).toBe("other");
+  });
+});

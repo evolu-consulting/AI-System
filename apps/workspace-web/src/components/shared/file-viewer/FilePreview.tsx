@@ -7,6 +7,7 @@ import { viewerKind } from "./viewer-kind";
 
 const PdfPane = lazy(() => import("./PdfPane"));
 const DocxPane = lazy(() => import("./DocxPane"));
+const TextPane = lazy(() => import("./TextPane"));
 
 export function useBlobUrl(blob: Blob | null): string | null {
   const url = useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
@@ -54,8 +55,8 @@ export function FilePreview({ blob, name, mime }: { blob: Blob; name: string; mi
         )}
       </div>
     );
-  if (kind === "pdf" || kind === "docx") {
-    const Pane = kind === "pdf" ? PdfPane : DocxPane;
+  if (kind === "pdf" || kind === "docx" || kind === "text") {
+    const Pane = kind === "pdf" ? PdfPane : kind === "docx" ? DocxPane : TextPane;
     return (
       <Suspense
         fallback={<p className="p-4 text-label text-dim">{t("contracts.fview.loading")}</p>}
