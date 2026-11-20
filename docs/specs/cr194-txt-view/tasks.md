@@ -27,7 +27,7 @@ unit file sửa + tsc workspace-web.
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED sht/xem-tep.md
+### ADDED sht/xem-tep.md
 #### Yêu cầu: Xem tệp văn bản thuần trong hộp «Xem»
 Tệp .txt/.csv/.md/.log mở được trong hộp «Xem»: hiện chữ, giữ xuống dòng, cuộn, phông đơn cách; chỉ 1 MB đầu, lớn hơn thì có ghi chú và nút «Tải về».
 - Kịch bản: khi mở tệp .txt thì thấy chữ nguyên văn, thẻ HTML không được dựng [test: e2e/cr149/txt-preview.spec.ts » Xem tệp .txt trong hộp: hiện chữ, giữ xuống dòng, có Tải về]
