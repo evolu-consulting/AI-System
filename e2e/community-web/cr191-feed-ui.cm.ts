@@ -124,19 +124,17 @@ test("icon Sửa/Xoá/Ẩn ở thẻ bài: 28px cách 2px trên máy tính, có 
   await expect(page.getByRole("menuitem", { name: "Sửa bài" })).toHaveCount(0); // không còn menu ⋯ có chữ
 });
 
-test("điện thoại: icon thẻ bài 44px sát nhau, nút Lọc nổi đáy mở sheet từ dưới", async ({
+test("điện thoại: thẻ bài có một nút ⋯ 44px (không còn icon rời), nút Lọc nổi đáy mở sheet từ dưới", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/community");
-  const btns = page.getByTestId("post-acts").first().locator(".iconact");
-  await expect(btns.first()).toBeVisible();
-  const n = await btns.count();
-  for (let i = 0; i < n; i++) {
-    const b = await btns.nth(i).boundingBox();
-    expect(b?.width).toBeGreaterThanOrEqual(44);
-    expect(b?.height).toBeGreaterThanOrEqual(44);
-  }
+  const more = page.getByTestId("post-more").first();
+  await expect(more).toBeVisible();
+  const b = await more.boundingBox();
+  expect(b?.width).toBeGreaterThanOrEqual(44);
+  expect(b?.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByTestId("post-acts").first().locator(".iconact")).toHaveCount(0);
   const fab = page.getByTestId("feed-filter-btn");
   const f = await fab.boundingBox();
   expect(f && f.y + f.height).toBeGreaterThan(844 - 80); // nút nổi sát đáy

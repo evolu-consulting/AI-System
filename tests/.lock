@@ -188,7 +188,7 @@ c25949b06ecb3b9b0c6b47b82cafb9274ae685d4dce40a67c0ff4771dc2d63b0  e2e/community-
 d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-web/_flow.ts
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
-2fbb4012a61adfb626822b6ccc8d0226d6f13d1836b3fc78581e7ffeceef59ee  e2e/community-web/baseline/linux/bang-tin-mobile.png
+e962a45c8d7c61d486480e0bc7b93ac3d64387e4749773613240879930d250c5  e2e/community-web/baseline/linux/bang-tin-mobile.png
 6defa93355b5dcdd35fce70ec7a606aa2240da6894ac5b985b86ffe001e8da42  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 6201d2a08cfacbfbe79b440a10cc1f7222de48ab7597d52a89d32520961fe7b3  e2e/community-web/cr129-media.cm.ts
@@ -202,9 +202,11 @@ ec339eba9e76d17b1291fc18ce4015d69bad499b466b835ebb8a4acf65a24b01  e2e/community-
 362d85a7777b54dd27976b27929ecdf732dc11ba4b2a777c2a6c1e99e4dde22c  e2e/community-web/cr186-mention-store.cm.ts
 fe9b434ad26c6167389965a2ad09c7ccb0f7c957f4d2c407dce64d40c9891dc3  e2e/community-web/cr187-ui.cm.ts
 fa917c48d5d39478b470f3e5815638c4d6f9b9cb415b17ccd7ab2dfcf46ae1dc  e2e/community-web/cr191-composer-audience.cm.ts
-dd1b16aa2df44a17aa4df831aa46a862ffc7fda9abbe94ed582e5aec25764b58  e2e/community-web/cr191-feed-ui.cm.ts
+33c71c76ace8d0e6635c4e5d46b0a429e5c9e8e968fea9ee8fb7cbc7a58eeebc  e2e/community-web/cr191-feed-ui.cm.ts
 dc6bd7ed1d1b90e9925ff88f226a7f4440314221c462286047a8ad98b25eca36  e2e/community-web/cr192-crop.cs.ts
 4d3c042ac9c0d719f2a5a3b346c07f9151ca29e3f014836b52ff3016659dbd39  e2e/community-web/cr193-crop-paint.cm.ts
+ba3a9195621c26a76dfe750628718f3e245e7804a205d71ee62e0c116d48b55c  e2e/community-web/cr195-composer-dialog.cm.ts
+809262332321b975412bc483083c1438ca4df6a7cd99efcec4a33098004fdc71  e2e/community-web/cr195-postcard-mobile.cm.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 26e3bc6e70f6c46dc691816921ff34f525008f0ef8d37ee15cc7f02a854a66bc  e2e/community-web/feed.cm.ts
 13fc117b2e04051c8ef5607a9b71345b3bcaef1d0fc0194d047c9f80b53282aa  e2e/community-web/fix-cr186-ui.cm.ts
@@ -532,8 +534,9 @@ b6a769ff2368a4935df4b43b37aec0a3a49428d196a405f411bb83d8f546ef23  e2e/cr127/j18-
 1eec78e04ae1a12505d92ae7a89c7b8b0b8cac8e1f31e13a52205ebc8162dad3  e2e/cr127/j18-tin-nhan.spec.ts
 0192c65fffe369c1d79340d0f26511f1a1077c8c6e401352e37cc1507b614ad6  e2e/cr127/j19-tin-nhan-khoang.spec.ts
 828b1f75cf024958d01f52b638652d42ec1410acba2da2634911e2383257348a  e2e/cr127/j20-tin-nhan-danh-ba.spec.ts
-045e37e868f9b8abb59bc177cf48d1f7b09119b7fb0aadf8cce5e688d31fe004  e2e/cr127/playwright.cr127.config.ts
+6695ac8b982ebdb03c5346d0f67612c947581a5e14ab104b93aafd73449c517a  e2e/cr127/playwright.cr127.config.ts
 089b17c879399e94195134ba93e5baa40e9142fa01feed77b0179dba74588013  e2e/cr149/file-preview.spec.ts
+c18c68748a31210af7fb2ccbfcdfb409de957fc02cae29801bb4dad87054ec9c  e2e/cr149/txt-preview.spec.ts
 353db2bc9a5f46c18eaccb94a1d37f79ba49a3ed998d2cdc468e7dd41bc91a3c  e2e/cr152/kinds-ui.spec.ts
 363b492cde8982cf226da3800c469d06654da68813fd437f62663bc689f257a8  e2e/cr161/_cr161-stack.ts
 416d714dda1ae388935f9be51c402bea4a29b02497fba82f698f08e3053ae3de  e2e/cr161/ket-noi-cong-ty.spec.ts
@@ -754,7 +757,7 @@ e59bdf35bfc1386dc543c37d619089b68821b36e5d4c130efd6f43c2050b587c  tests/acceptan
 a16358eacb4dbc057c5c58eb9f65ae5039ee092f36b25ba3ff81b39d10ac5510  tests/acceptance/DOC-model/perf/list-frame.perf.int.test.ts
 50ac7867889f650dc720f36e1a383c721a2747945b62e05e91fc1b1bb84460fe  tests/acceptance/FB1/_fb1.ts
 9275fa0236540e3666b6f5e0738e35359042d7ad82bea355ae6b1e1b3652ceb4  tests/acceptance/FB1/_fb1room.ts
-3f7b95b3d3fdbd7c1cfc68ba1255c3058b31c536e100ef15c3b37c24a20f4b74  tests/acceptance/FB1/_fbfake.ts
+044e149bf17ae97159db6bc131ccf11962573ea91c9228e12e26809885846041  tests/acceptance/FB1/_fbfake.ts
 1631de26d151fa3e7ff22fb59a73deb584b0ad2d84204c2df6eb870e4cf57dd3  tests/acceptance/FB1/_fbout.ts
 76d26aea10b20e48f2d5fa15f208899641113a38aa46398d9c7f708f92e214d6  tests/acceptance/FB1/bytes.int.test.ts
 93023a0363ade442e6112e63b408f3ce9c1adc195cb9021f12c4562ca5284f7a  tests/acceptance/FB1/content.int.test.ts

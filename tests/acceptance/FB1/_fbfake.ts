@@ -199,6 +199,8 @@ export function startFbFake(token = "fb-test-token-Zx9Pq7Lm"): FbFake {
       (f.versions[f.versions.length - 1] as FbFile["versions"][number]).bytes,
       req,
     );
+    // CR-194: stack e2e FileBox giả khác origin với web ⇒ cho phép đọc từ trình duyệt (stg/prod cùng origin qua /_fb).
+    res.headers.set("access-control-allow-origin", "*");
     // Như FileBox thật (app.py: Content-Disposition attachment; filename*=UTF-8''<tên>) để trình duyệt lưu đúng tên tệp.
     res.headers.set(
       "content-disposition",
