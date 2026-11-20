@@ -13,4 +13,8 @@ Nguồn: người dùng 2026-11-20 (ảnh hộp «Viết bài» máy tính + đi
 - **BR-195-6** Tệp .txt/.csv/.md trong bài có nút «Xem» như PDF (áp BR-194-4 cho bảng tin; dùng chung logic, không viết lần hai).
 
 ## Ảnh tải nhanh
-- **BR-195-7** Mở lại bảng tin: ảnh đã xem hiện ngay (trình duyệt giữ lại). Tệp theo id không đổi nội dung ⇒ `Cache-Control: private, max-age=31536000, immutable` cho phản hồi tải tệp đã qua kiểm quyền; trong một phiên không tải lại ảnh đã có. Đo trước/sau (báo số thật). Không đổi cách đăng nhập.
+- **BR-195-7** Mở lại bảng tin: ảnh đã xem hiện ngay (trình duyệt giữ lại). Tệp theo id không đổi nội dung ⇒ `Cache-Control: private, max-age=86400` cho phản hồi tải tệp đã qua kiểm quyền; trong một phiên không tải lại ảnh đã có. Đo trước/sau (báo số thật). Không đổi cách đăng nhập.
+
+## Quyết định trong lúc làm
+- Người dùng «vẫn muốn giữ auth» ⇒ ảnh vẫn qua kiểm đăng nhập + quyền mỗi lần tải (không link công khai, không đổi sang cookie). Đo code: kiểm JWT cục bộ + cache cấu hình (`apps/hub-api/src/lib/auth.middleware.ts:46`) — không phải chỗ chậm. Chỗ chậm: `Cache-Control: private, no-store` (`community/domain/file.rules.ts:122`), ảnh gốc đầy đủ, đọc hết tệp vào bộ nhớ (`files.service.ts:94`).
+- BR-195-7 sửa mặc định: `private, max-age=86400` (1 ngày, không `immutable` dài hạn) — đánh đổi máy dùng chung.
