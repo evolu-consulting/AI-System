@@ -80,50 +80,52 @@
 }
 
 /* CR-195 BR-195-2 · hộp «Viết bài»: nền trắng của hộp, không thẻ lồng (bỏ bóng/nền/viền của .feedcomposer và .audbox); các phần ngăn bằng khoảng trống. */
-[data-mod="community"] .composedlg .feedcomposer {
+.composedlg[data-mod="community"] .feedcomposer {
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
   box-shadow: none;
 }
-[data-mod="community"] .composedlg .audbox {
+.composedlg[data-mod="community"] .audbox {
   border: 0;
   background: none;
   padding: 0;
   margin: 0;
 }
-[data-mod="community"] .composedlg .feedcomposer .cbar {
+.composedlg[data-mod="community"] .feedcomposer .cbar {
   border-top: 0;
   padding-top: 0;
 }
-[data-mod="community"] .composedlg .composetext textarea {
+.composedlg[data-mod="community"] .composetext textarea {
   min-height: 140px;
   background: var(--card);
 }
 @media (max-width: 640px) {
-  [data-mod="community"] .composedlg .composetext {
-    flex: 1 1 auto;
+  .composedlg[data-mod="community"] .composetext {
+    flex: 1 1 0;
     display: flex;
-    min-height: 120px;
+    min-height: 160px;
   }
-  [data-mod="community"] .composedlg .composetext textarea {
+  .composedlg[data-mod="community"] .composetext textarea {
     flex: 1;
-    min-height: 100%;
+    height: auto;
+    min-height: 160px;
+    align-self: stretch;
     resize: none;
   }
   /* «Ai thấy bài»: nhãn + ô chọn cùng một hàng gọn */
-  [data-mod="community"] .composedlg .audbox {
+  .composedlg[data-mod="community"] .audbox {
     display: grid;
     grid-template-columns: auto 1fr;
     align-items: center;
     column-gap: 12px;
   }
-  [data-mod="community"] .composedlg .audbox > :nth-child(n + 3) {
+  .composedlg[data-mod="community"] .audbox > :nth-child(n + 3) {
     grid-column: 1 / -1;
   }
   /* thanh dưới (📎 + «Đăng bài») dính đáy, chừa vùng an toàn của máy */
-  [data-mod="community"] .composedlg .feedcomposer .cbar {
+  .composedlg[data-mod="community"] .feedcomposer .cbar {
     position: sticky;
     bottom: 0;
     flex-wrap: nowrap;
