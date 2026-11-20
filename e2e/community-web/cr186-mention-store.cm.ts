@@ -8,7 +8,7 @@ test("bình luận có người được nhắc hiện dòng «Nhắc: …» và
   await page.goto("/community");
   const card = page.locator('[data-post-id="p1"]');
   await expect(card.getByTestId("comment-mentions")).toHaveCount(0); // bình luận cũ của seed
-  await card.getByRole("button", { name: "Nhắc tên" }).click();
+  await card.getByRole("combobox", { name: "Viết bình luận" }).pressSequentially("@"); // CR-193: không còn nút «Nhắc tên», chỉ gõ @
   const dlg = page.getByTestId("mention-dialog");
   await dlg.getByTestId("mention-option").filter({ hasText: "Lan" }).getByRole("checkbox").check();
   await dlg.getByRole("button", { name: "Xong (1 người)" }).click();

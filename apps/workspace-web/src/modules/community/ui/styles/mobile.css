@@ -19,7 +19,6 @@
   [data-mod="community"] .post .ph .acts {
     gap: 0;
   }
-  [data-mod="community"] .filterbtn,
   [data-mod="community"] .filterfab {
     min-height: 44px;
   }

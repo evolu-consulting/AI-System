@@ -271,11 +271,16 @@
 }
 [data-mod="community"] .card {
   background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 [data-mod="community"] .pad {
   padding: 16px;
+}
+@media (max-width: 640px) {
+  [data-mod="community"] .pad {
+    padding: 12px; /* CR-193 L4 */
+  }
 }
 [data-mod="community"] .mini {
   display: flex;
@@ -547,7 +552,7 @@
   color: var(--cm-accent);
 }
 [data-mod="community"] .post {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   position: relative;
 }
 [data-mod="community"] .ph {
@@ -744,10 +749,9 @@
   font-weight: 600;
 }
 [data-mod="community"] .cmts {
-  border-top: 1px solid var(--rule-soft);
+  border-top: 1px solid var(--row-divider);
   padding: 12px 16px 16px;
-  background: var(--sunk);
-  border-radius: 0 0 14px 14px;
+  background: transparent; /* CR-193 L2: không thẻ trong thẻ */
 }
 [data-mod="community"] .cnote {
   font-size: 12px;
@@ -763,8 +767,9 @@
   margin-bottom: 10px;
 }
 [data-mod="community"] .bubble {
-  background: var(--bubble);
-  border-radius: 12px;
+  background: var(--muted);
+  border: 0;
+  border-radius: var(--radius-md);
   padding: 8px 12px;
   max-width: 100%;
 }

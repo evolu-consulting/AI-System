@@ -199,30 +199,9 @@
   background: var(--cm-surface-2);
 }
 
-/* ---------- Thanh tab sticky liền khối ---------- */
-[data-mod="community"] .stickytop {
-  position: sticky;
-  /* cr120-handson-fixes: thanh shell nằm NGOÀI vùng cuộn của trang ⇒ offset 60px đẩy cả khối xuống (khoảng trống trên composer) và
-     đè thẻ bài đầu tiên. Dính sát mép vùng cuộn. */
-  /* Vùng cuộn của shell có py-7 (28px): sticky tính từ mép trong ⇒ bù -28px để nền phủ cả dải đó, bài không lộ phía trên thanh. */
-  top: -18px;
-  z-index: 25;
-  background: var(--cm-feed-bg);
-  /* CR-179: không đệm trên ⇒ mép trên ô đăng bài thẳng hàng thẻ «Bộ lọc»; dải 10px phía trên khi dính được phủ bằng bóng nền. */
-  padding-top: 0;
-  box-shadow: 0 -10px 0 var(--cm-feed-bg);
-  /* CR-172: khối dính không có đệm ngang ⇒ ô đăng bài, thanh tab và thẻ bài cùng mép trái/phải cột (thẳng hàng với khối «Bộ lọc»). */
-  padding-left: 0;
-  padding-right: 0;
-  /* Khe dưới thanh là padding (có nền), không phải margin trong suốt — bài cuộn qua không lộ ra ở khe. */
-  padding-bottom: 14px;
-}
-/* Composer mở rộng (~680px) mà vẫn dính thì chiếm gần hết màn 900px, che bài bên dưới ⇒ chỉ dính khi thu gọn. */
-[data-mod="community"] .stickytop:has(.feedcomposer:not(.collapsed)) {
-  position: static;
-}
-[data-mod="community"] .stickytop .feedcomposer {
-  margin: 0 0 10px;
+/* CR-193 BR-193-5 · ô đăng bài không dính: cuộn theo trang. */
+[data-mod="community"] .feedcomposer {
+  margin: 0 0 12px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -287,16 +266,6 @@
     padding: 0 11px;
   }
 }
-[data-mod="community"] .feedbar {
-  position: static;
-  background: color-mix(in srgb, var(--card) 90%, transparent);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--cm-line);
-  border-radius: 13px;
-  box-shadow: var(--cm-shadow-bar);
-  padding: 7px;
-  margin-bottom: 14px;
-}
 [data-mod="community"] .tabs {
   display: flex;
   gap: 3px;
@@ -354,37 +323,15 @@
   color: var(--primary-foreground);
 }
 
-/* ---------- Thẻ bài: vạch spine + pill loại ---------- */
-[data-mod="community"] .post {
-  box-shadow: var(--cm-shadow);
-}
-[data-mod="community"] .post::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  border-radius: 14px 0 0 14px;
-}
-[data-mod="community"] .post.sell::before {
-  background: var(--cm-sell);
-}
-[data-mod="community"] .post.buy::before {
-  background: var(--cm-buy);
-}
-[data-mod="community"] .post.note::before {
-  background: var(--cm-note);
-}
+/* ---------- Thẻ bài: pill loại (CR-193 BR-193-4: không dải màu bên trái) ---------- */
 [data-mod="community"] .post.muted {
   opacity: 0.78;
 }
 [data-mod="community"] .post .ph {
   align-items: center;
-  padding-left: 19px;
 }
 [data-mod="community"] .post .pbody {
-  padding-left: 19px;
+  padding-left: 16px;
 }
 [data-mod="community"] .post .pbody h3 {
   font-size: 17px;
@@ -400,7 +347,7 @@
 [data-mod="community"] .post .callout,
 [data-mod="community"] .post .deal,
 [data-mod="community"] .post .media {
-  margin-left: 19px;
+  margin-left: 16px;
 }
 [data-mod="community"] .pill {
   display: inline-flex;
@@ -431,8 +378,8 @@
   display: flex;
   align-items: stretch;
   margin: 13px 16px 0;
-  border: 1px solid var(--cm-line);
-  border-radius: 13px;
+  border: 0; /* CR-193 L2: khối nền muted không viền */
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--cm-surface-2);
 }
@@ -595,18 +542,6 @@
   }
 }
 
-/* CR-186 · mốc 1px trước khối dính (useStuck) + viền bóng nhẹ dưới khối khi ĐANG dính để bài cuộn bên dưới không dính vào mép. */
-[data-mod="community"] .stickysentinel {
-  height: 1px;
-  margin-bottom: -1px;
-  pointer-events: none;
-}
-[data-mod="community"] .stickytop[data-stuck="true"]:not(:has(.feedcomposer:not(.collapsed))) {
-  box-shadow:
-    0 -10px 0 var(--cm-feed-bg),
-    0 8px 10px -8px color-mix(in srgb, var(--ink) 40%, transparent);
-}
-
 /* CR-187 BR-187-9 · đổi tab/lọc: giữ bài cũ, làm mờ tới khi có trang mới (không trắng rồi hiện lại) */
 [data-mod="community"] .feedbody {
   transition: opacity var(--duration-fast, 150ms);
@@ -617,7 +552,6 @@
 }
 
 /* ---------- CR-191 · bảng tin một cột: nút Lọc, sheet lọc, icon thao tác trên thẻ bài, khung chờ ---------- */
-[data-mod="community"] .filterbtn,
 [data-mod="community"] .filterfab {
   display: inline-flex;
   align-items: center;
@@ -631,7 +565,6 @@
   font-weight: 600;
   font-size: 14px;
 }
-[data-mod="community"] .filterbtn .n,
 [data-mod="community"] .filterfab .n {
   min-width: 20px;
   height: 20px;
@@ -724,5 +657,17 @@
   }
   [data-mod="community"] .post .pact {
     padding-right: 64px;
+  }
+}
+
+/* CR-193 BR-193-2 · máy tính: nút Lọc nổi góc phải dưới, ngay trên nút trợ lý (right/bottom 24px, cao 48px). */
+@media (min-width: 641px) {
+  [data-mod="community"] .filterfab {
+    left: auto;
+    right: 24px;
+    bottom: calc(24px + 48px + 12px);
+  }
+  [data-mod="community"] .feedwrap {
+    padding-bottom: 140px; /* đệm đáy: nút nổi không che bài cuối */
   }
 }

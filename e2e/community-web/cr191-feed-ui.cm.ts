@@ -158,3 +158,34 @@ test("điện thoại: không còn thanh bo tròn trống dưới ô đăng bài
   expect(fab && nav).toBeTruthy();
   expect((fab?.y ?? 0) + (fab?.height ?? 0)).toBeLessThanOrEqual(nav?.y ?? 0);
 });
+
+// CR-193 BR-193-2/5 · máy tính: nút Lọc nổi (không thanh lọc dính), ô đăng bài cuộn đi theo trang; không có nút «Nhắc tên» ở bình luận (BR-193-1).
+test("CR193 · máy tính: nút Lọc nổi góc phải dưới, ô đăng bài không dính khi cuộn", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/community");
+  await expect(posts(page).first()).toBeVisible();
+  await expect(page.locator(".feedbar")).toHaveCount(0);
+  const fab = page.getByTestId("feed-filter-btn");
+  await expect(fab).toHaveCSS("position", "fixed");
+  const f = await fab.boundingBox();
+  expect(f && f.x + f.width).toBeGreaterThan(1440 - 80); // sát mép phải
+  expect(f && f.y + f.height).toBeGreaterThan(900 - 160); // sát đáy
+  const before = await page.getByTestId("composer").boundingBox();
+  await page.mouse.wheel(0, 600);
+  await expect
+    .poll(async () => (await page.getByTestId("composer").boundingBox())?.y)
+    .toBeLessThan((before?.y ?? 0) - 100); // ô đăng bài cuộn đi, không dính
+  await expect(fab).toBeVisible(); // nút Lọc vẫn nổi
+});
+
+test("CR193 · bình luận: không có nút «Nhắc tên», gõ @ vẫn mở hộp gợi ý", async ({ page }) => {
+  await page.goto("/community");
+  const card = page.locator('[data-post-id="p1"]');
+  const box = card.getByRole("combobox", { name: "Viết bình luận" });
+  await expect(box).toBeVisible();
+  await expect(card.getByRole("button", { name: "Nhắc tên" })).toHaveCount(0);
+  await box.pressSequentially("@");
+  await expect(page.getByTestId("mention-dialog")).toBeVisible();
+});

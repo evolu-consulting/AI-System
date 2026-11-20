@@ -1,5 +1,5 @@
 // Bình luận dưới bài (CR-129): MỘT danh sách phẳng (chủ quản thấy hết; đối tác thấy phần server cho phép), không còn luồng riêng theo công ty.
-// CR-186: gõ `@` (hoặc bấm nút «Nhắc tên») mở CHUNG hộp «Nhắc tên» của ô đăng bài (lọc nhóm + tìm, người thấy được bài); gửi `mentionUserIds`.
+// CR-186: gõ `@` mở CHUNG hộp «Nhắc tên» của ô đăng bài (lọc nhóm + tìm, người thấy được bài); gửi `mentionUserIds`.
 // Bình luận cũ nhắc CÔNG TY (CR-129) vẫn hiện tô đậm như cũ (chỉ đọc).
 
 import type { CommentView, PostView } from "@ai/contracts/community";
@@ -190,6 +190,7 @@ export function Thread({
           }}
         />
         <MentionPicker
+          hideButton
           mentions={mentions}
           onChange={(next) => {
             // người mới chọn ⇒ chèn «@Tên» vào chữ để người đọc thấy ai được nhắc

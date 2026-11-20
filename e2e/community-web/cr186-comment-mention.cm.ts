@@ -26,12 +26,12 @@ test("gõ «@» ở ô bình luận ⇒ hộp «Nhắc tên» có lọc nhóm + 
   await expect(card.getByText(/@Lan/)).toBeVisible();
 });
 
-test("nút «Nhắc tên» cạnh ô bình luận mở cùng hộp; lọc «Khách hàng» chỉ còn người công ty khách hàng", async ({
+test("gõ «@» ở ô bình luận mở cùng hộp; lọc «Khách hàng» chỉ còn người công ty khách hàng", async ({
   page,
 }) => {
   await page.goto("/community");
   const card = page.locator('[data-post-id="p1"]');
-  await card.getByRole("button", { name: "Nhắc tên" }).click();
+  await card.getByRole("combobox", { name: "Viết bình luận" }).pressSequentially("@"); // CR-193: không còn nút «Nhắc tên», chỉ gõ @
   const dlg = page.getByTestId("mention-dialog");
   await dlg.getByRole("combobox", { name: "Nhóm người" }).click();
   await page.getByRole("option", { name: "Khách hàng", exact: true }).click();

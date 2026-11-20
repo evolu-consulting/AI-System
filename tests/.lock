@@ -189,7 +189,7 @@ d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
 1270c74fe081b7508bb22a4c9587bf032a6fd2d9fb9b1560c14a5fa57e1caa6d  e2e/community-web/baseline/linux/bang-tin-mobile.png
-02591045da2877e7e449ab6b05fe0cf7c5815d7bd076331ea56a63309ef5ea1c  e2e/community-web/composer.cm.ts
+6defa93355b5dcdd35fce70ec7a606aa2240da6894ac5b985b86ffe001e8da42  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 6201d2a08cfacbfbe79b440a10cc1f7222de48ab7597d52a89d32520961fe7b3  e2e/community-web/cr129-media.cm.ts
 27fc9e01f5a6f756e1751aa84ff1420a3121d9a8a55bddbe5d3b1caab5ad8b9a  e2e/community-web/cr129-mention.cs.ts
@@ -197,12 +197,12 @@ d5cc4f282586bf0bd5abaf7431c49610fcb123569f7af42120af95c9090be855  e2e/community-
 617537b4161e6a6d7f6c34919de856c625e3d593d926d615a987f2c7eb523f31  e2e/community-web/cr145-post-mention.cs.ts
 751517b3c3e6c52274ca76515f4237c11f7d733ec310778c0038230aa3ab7ed8  e2e/community-web/cr147-feed.cm.ts
 11e5c0c8c37e078ca2e72c6b1034bd93587e3b023267e0ce1a01885e838684b6  e2e/community-web/cr147b-people.cs.ts
-2b109fe3bd267f22b76b917104a662f84732f2f2ee78ce22bd8a6ca7794a0740  e2e/community-web/cr186-comment-mention.cm.ts
+382df67fead773387be398dc2736ecf2daab13fcb22026788620cdf847152efb  e2e/community-web/cr186-comment-mention.cm.ts
 7319c2533e1048e308969b129afe280accd0f79d3b150d7cf5ad9c5d59269bb1  e2e/community-web/cr186-composer.cm.ts
-cb467ca365c9d0bfcbf35025d017a538ade0ffa48be6847bf1ce9cc5be4a550e  e2e/community-web/cr186-mention-store.cm.ts
+28e0555c02fe681746508ee361228b78e5fdc6715c3fe074c3d70bf030d7fbc5  e2e/community-web/cr186-mention-store.cm.ts
 fe9b434ad26c6167389965a2ad09c7ccb0f7c957f4d2c407dce64d40c9891dc3  e2e/community-web/cr187-ui.cm.ts
 c2594eca430b6728befd22be9ca246e613787bbaa347e62dbe459f68d9d10967  e2e/community-web/cr191-composer-audience.cm.ts
-257ddd8fae2eebc58796c0b23731c2bf420c857577e5f2fd4f8265bd404ef7ff  e2e/community-web/cr191-feed-ui.cm.ts
+ceb1a91f3991109730bae599acd6029c611e9e585fa6de6ebb1dce72fdccdf44  e2e/community-web/cr191-feed-ui.cm.ts
 dc6bd7ed1d1b90e9925ff88f226a7f4440314221c462286047a8ad98b25eca36  e2e/community-web/cr192-crop.cs.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 26e3bc6e70f6c46dc691816921ff34f525008f0ef8d37ee15cc7f02a854a66bc  e2e/community-web/feed.cm.ts

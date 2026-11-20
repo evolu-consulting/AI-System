@@ -1,4 +1,4 @@
-// Bảng tin: FeedPage (một cột: composer + thanh dính có nút «Lọc» + bài gộp) và FeedList (Profile: chip + lọc gọn).
+// Bảng tin: FeedPage (một cột: composer + bài gộp; nút «Lọc» nổi) và FeedList (Profile: chip + lọc gọn).
 
 import type {
   FeedQuery,
@@ -15,7 +15,7 @@ import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
 import { usePeopleCards } from "../application/use-people-cards";
 import { useConnected, useFeed, useFeedFilters } from "../application/useFeed";
-import { composerCompact, useNarrow, useStuck } from "../application/useStuck";
+import { useNarrow } from "../application/useStuck";
 import { hasActiveFilter } from "../domain/filters";
 import { t } from "../i18n";
 import { Composer } from "./Composer";
@@ -235,29 +235,20 @@ export function FeedList({
   );
 }
 
-/** CR-191 · bảng tin MỘT cột (kiểu Facebook): ô đăng bài + thanh dính có nút «Lọc», bài gộp công ty mình + đối tác, tải 20 bài/lần khi cuộn. */
+/** CR-191 · bảng tin MỘT cột (kiểu Facebook): ô đăng bài (cuộn theo trang) + nút «Lọc» nổi, bài gộp công ty mình + đối tác, tải 20 bài/lần khi cuộn. */
 export function FeedPage() {
   const f = useFeedFilters();
   const { data, error, stale, more } = useFeed(f.query);
   const connected = useConnected();
   useFocusPost(!!data);
-  const { sentinel, stuck, toTop } = useStuck();
   const narrow = useNarrow();
   return (
     <div className="feedwrap">
       <div className="feedcol">
-        <div ref={sentinel} className="stickysentinel" aria-hidden="true" />
-        <div className="stickytop" data-stuck={stuck}>
-          <Composer compact={composerCompact(stuck, narrow)} onExpand={toTop} />
-          {!narrow && (
-            <div className="feedbar">
-              <FeedFilterSheet f={f} data={data} connected={connected} narrow={false} />
-            </div>
-          )}
-        </div>
+        <Composer />
         <FeedBody data={data} error={error} more={more} stale={stale} />
       </div>
-      {narrow && <FeedFilterSheet f={f} data={data} connected={connected} narrow />}
+      <FeedFilterSheet f={f} data={data} connected={connected} narrow={narrow} />
     </div>
   );
 }

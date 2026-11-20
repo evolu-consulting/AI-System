@@ -45,10 +45,10 @@ test("một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài v
 });
 
 // CR-172 · ô đăng bài không có đệm ngang riêng: mép trái/phải thẳng hàng với thanh tab và thẻ bài cùng cột.
-test("CR172 · ô đăng bài thẳng mép trái/phải với thanh tab của bảng tin", async ({ page }) => {
+test("CR172 · ô đăng bài thẳng mép trái/phải với thẻ bài đầu của bảng tin", async ({ page }) => {
   await page.goto("/community");
   const c = await composer(page).boundingBox();
-  const bar = await page.locator(".feedbar").boundingBox();
+  const bar = await page.getByTestId("post").first().boundingBox(); // CR-193: không còn thanh lọc dính
   if (!c || !bar) throw new Error("không có khung");
   expect(Math.abs(c.x - bar.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(c.x + c.width - (bar.x + bar.width))).toBeLessThanOrEqual(1);

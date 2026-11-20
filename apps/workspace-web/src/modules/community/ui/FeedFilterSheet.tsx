@@ -1,4 +1,4 @@
-// CR-191 · bộ lọc bảng tin gộp: nút «Lọc» (máy tính: thanh dính đầu bảng tin; điện thoại: nút nổi đáy, vùng an toàn) mở sheet
+// CR-191 · bộ lọc bảng tin gộp: nút «Lọc» (CR-193: mọi màn hình là nút nổi, máy tính góc phải dưới) mở sheet
 // (máy tính: bên phải; điện thoại: từ dưới). Lọc loại bài + nguồn (Tất cả / Công ty mình / Đối tác / từng công ty đã kết nối) + nhóm hàng/khu vực.
 import type { FeedResponse, FeedTab } from "@ai/contracts/community";
 import { Button } from "@ai/web-kit/ui/kit/button";
@@ -66,7 +66,7 @@ export function FeedFilterSheet({
   const trigger = (
     <button
       type="button"
-      className={narrow ? "filterfab" : "filterbtn"}
+      className="filterfab"
       data-testid="feed-filter-btn"
       aria-haspopup="dialog"
       aria-expanded={open}
