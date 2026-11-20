@@ -24,3 +24,9 @@ Nguồn: người dùng 2026-11-20, chốt «làm luôn». Thiết kế bảng t
 - **BR-193-9** «Yêu cầu kết nối» + «Yêu cầu tham gia» gộp một thẻ «Yêu cầu chờ duyệt»: mỗi yêu cầu một dòng gọn, tối đa 3 dòng + «Xem thêm»; không có yêu cầu ⇒ ẩn thẻ.
 - **BR-193-10** «Cho phép tìm thấy» + «Đang kết nối» thành một dòng gọn đầu trang (công tắc + số công ty đang kết nối, bấm mở danh sách).
 - **BR-193-11** Bảng đối tác dùng thanh cuộn của trang (L3).
+
+### Quyết định từ bản mẫu (2026-11-20, người dùng «mẫu trang Đối tác ok» ⇒ theo mặc định)
+- Q1 Bố cục máy tính: **A** — thẻ «Yêu cầu chờ duyệt» nằm trên bảng (điện thoại cũng vậy).
+- Q2 «Lời mời mình đã gửi»: cuối thẻ «Yêu cầu chờ duyệt», dưới tiêu đề nhỏ.
+- Q3 Dòng «Mình giao đúng hạn …»: một dòng chữ nhỏ dưới tiêu đề trang, không khung.
+- Q4 «Xem thêm»: mở rộng ngay trong thẻ, có «Thu gọn».
