@@ -66,3 +66,4 @@ Mỗi dòng do `bun run release:log --env <staging|prod> --ref <sha>` ghi (deplo
 | 2026-11-20 | staging | 0d0233606 | admin 0040 · hub 0172 · community:0033 contracts:0129 dlc:0001 knowledge:0006 pkdemo:0002 | CR-195, CR-194 | MSI VN |
 | 2026-11-20 | staging | 6f67a4e1e | admin 0040 · hub 0172 · community:0033 contracts:0129 dlc:0001 knowledge:0006 pkdemo:0002 | CR-195 | MSI VN |
 | 2026-11-20 | staging | e78bcaec7 | admin 0040 · hub 0172 · community:0033 contracts:0129 dlc:0001 knowledge:0006 pkdemo:0002 | CR-195, CR-194 | MSI VN |
+| 2026-11-20 | prod | cf46571c0 | admin 0040 · hub 0172 · community:0033 contracts:0129 dlc:0001 knowledge:0006 pkdemo:0002 | CR-195, CR-194 | MSI VN |
