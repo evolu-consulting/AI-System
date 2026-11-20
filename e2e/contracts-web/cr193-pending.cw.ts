@@ -48,7 +48,7 @@ test("5 yêu cầu chờ ⇒ thấy 3 + «Xem thêm 2 yêu cầu», bấm ⇒ th
   await expect(rows).toHaveCount(3);
   await page.getByRole("button", { name: "Xem thêm 2 yêu cầu" }).click();
   await expect(rows).toHaveCount(5);
-  await page.getByRole("button", { name: "Thu gọn" }).click();
+  await page.getByRole("button", { name: "Thu gọn", exact: true }).click();
   await expect(rows).toHaveCount(3);
 });
 
