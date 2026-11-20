@@ -65,6 +65,9 @@ export default function PdfPane({ blob, onError }: { blob: Blob; onError: () => 
   const { t } = useTranslation();
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [si, setSi] = useState(2);
+  // CR-193 BR-193-8: 100% = vừa bề rộng khung (trang 1), không cuộn ngang.
+  const wrap = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
   useEffect(() => {
     let dead = false;
     let opened: OpenedPdf | undefined;
@@ -84,8 +87,29 @@ export default function PdfPane({ blob, onError }: { blob: Blob; onError: () => 
       void opened?.dispose();
     };
   }, [blob, onError]);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!doc || !el) return;
+    let dead = false;
+    void doc.getPage(1).then((page) => {
+      const pw = page.getViewport({ scale: 1 }).width;
+      const apply = () => {
+        const w = el.clientWidth - 16; // đệm p-2 hai bên
+        if (!dead && w > 0 && pw > 0) setFit(Math.max(0.3, w / pw));
+      };
+      apply();
+      const ro = new ResizeObserver(apply);
+      ro.observe(el);
+      cleanup = () => ro.disconnect();
+    });
+    let cleanup = () => {};
+    return () => {
+      dead = true;
+      cleanup();
+    };
+  }, [doc]);
   if (!doc) return <p className="p-4 text-label text-dim">{t("contracts.fview.loading")}</p>;
-  const scale = STEPS[si] ?? 1;
+  const scale = fit * (STEPS[si] ?? 1);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-testid="pdf-viewer">
       <div className="flex items-center gap-2">
@@ -98,7 +122,9 @@ export default function PdfPane({ blob, onError }: { blob: Blob; onError: () => 
         >
           −
         </Button>
-        <span className="w-12 text-center text-sm tabular-nums">{Math.round(scale * 100)}%</span>
+        <span className="w-12 text-center text-sm tabular-nums">
+          {Math.round((STEPS[si] ?? 1) * 100)}%
+        </span>
         <Button
           variant="outline"
           size="sm"
@@ -109,7 +135,10 @@ export default function PdfPane({ blob, onError }: { blob: Blob; onError: () => 
           +
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto rounded-md border border-rule bg-sunk p-2">
+      <div
+        ref={wrap}
+        className="min-h-0 flex-1 overflow-auto rounded-md border border-rule bg-sunk p-2"
+      >
         {Array.from({ length: doc.numPages }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: số trang là khoá ổn định
           <PdfPage key={i} doc={doc} n={i + 1} scale={scale} />

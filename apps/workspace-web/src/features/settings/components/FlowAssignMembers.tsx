@@ -61,7 +61,7 @@ export function GroupMembers({ groupId }: { groupId: string }) {
       ) : count === 0 ? (
         <p className="text-caption text-dim">{t(`${K}.noMembers`)}</p>
       ) : (
-        <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+        <ul className="flex flex-col gap-1">
           {pages.map((p) => (
             <MemberRows key={p.items[0]?.id ?? "x"} items={p.items} />
           ))}

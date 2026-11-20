@@ -26,7 +26,10 @@ export function DetailGrid({
   info,
   lockedKeys,
   right,
+  stacked,
 }: {
+  /** CR-193: cột thông tin hẹp cố định (cạnh khung PDF) ⇒ xếp một cột. */
+  stacked?: boolean;
   /** CR-127: cột phải (Điều cần lưu ý · Cần chú ý · Hiệu lực · Hồ sơ duyệt). */
   right?: ReactNode;
   lockedKeys?: ReadonlySet<TextKey> | undefined;
@@ -45,7 +48,9 @@ export function DetailGrid({
   const aiMs = info.confirm && (c.ai?.milestones.length ?? 0) > 0;
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4 max-lg:grid-cols-1">
+      <div
+        className={`grid items-start gap-3 ${stacked ? "grid-cols-1" : "grid-cols-[1.15fr_1fr] max-lg:grid-cols-1"}`}
+      >
         <div
           data-testid="detail-left"
           className="flex min-w-0 flex-col gap-4 lg:[&:has(+div:empty)]:col-span-2"

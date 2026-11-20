@@ -170,7 +170,7 @@ test("CR-162 · màn nhập tay: form và tệp gốc 2 cột full chiều rộn
   const form = await page.getByTestId("manual-banner").boundingBox();
   expect(side && form && side.x > form.x).toBe(true);
   expect(side ? side.x + side.width : 0).toBeGreaterThan(1400 - 64); // chạm lề phải vùng nội dung, không chừa trống
-  expect(Math.abs((side?.width ?? 0) - 1400 / 2)).toBeLessThan(200); // ~ nửa
+  expect(Math.abs((form?.width ?? 0) - 360)).toBeLessThan(80); // CR-193: cột thông tin ~360px, PDF chiếm phần còn lại
   await page.setViewportSize({ width: 800, height: 900 });
   await expect(page.getByTestId("manual-side")).toBeHidden(); // hẹp ⇒ xếp dọc, dùng nút icon xem tệp
 });

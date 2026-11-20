@@ -8,11 +8,8 @@ export function FlowList({ flow }: { flow: CurrentFlow }) {
   const rows = listRows(flow, t);
   const trigger = viewTrigger(flow, t);
   return (
-    <ol className="mb-4 flex flex-col gap-2" data-testid="flow-diagram">
-      <li
-        className="flex flex-col rounded-lg border-2 border-act px-3 py-2"
-        data-testid="flow-row-start"
-      >
+    <ol className="mb-4 flex flex-col" data-testid="flow-diagram">
+      <li className="flex flex-col border-l-2 border-act px-3 py-2" data-testid="flow-row-start">
         <span className="font-medium">{trigger.label}</span>
         <span className="text-caption text-dim">{trigger.summary}</span>
       </li>
@@ -20,8 +17,8 @@ export function FlowList({ flow }: { flow: CurrentFlow }) {
         <li
           key={r.key}
           data-testid={`flow-row-${r.key}`}
-          className={`flex items-start gap-3 rounded-lg border px-3 py-2 ${
-            r.end ? "border-dashed border-field bg-sunk" : "border-rule"
+          className={`flex items-start gap-3 border-t border-rule-soft px-1 py-2 first:border-t-0 ${
+            r.end ? "bg-sunk" : ""
           }`}
         >
           <span className="min-w-5 text-caption text-dim">{r.index > 0 ? r.index : ""}</span>

@@ -183,7 +183,7 @@ export function ContractBody(p: {
   const reading = c.extract_state === "reading" && c.status === "draft" && c.submit_round === 0;
   return (
     <div
-      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
+      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[360px_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
     >
       <div className="min-w-0 flex-1 max-lg:w-full">
         <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">
@@ -286,6 +286,7 @@ export function ContractBody(p: {
                 info={info}
                 lockedKeys={lock.lockedKeys}
                 right={right}
+                stacked={manualSide}
               />
             )}
           </Fold>

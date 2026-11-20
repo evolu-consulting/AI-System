@@ -59,7 +59,7 @@ export function RepPane({ data, saved, defaults, sel, tab, onSel, onTab, set }: 
       <div
         role="tablist"
         aria-label={s("title")}
-        className="mb-4 flex flex-wrap gap-x-6 gap-y-3 rounded-xl border border-rule bg-panel px-3.5 py-3"
+        className="mb-4 flex flex-wrap gap-x-6 gap-y-3 border-b border-rule-soft pb-3"
       >
         {GROUPS.map((g) => (
           <div key={g} className="flex flex-col gap-1.5">

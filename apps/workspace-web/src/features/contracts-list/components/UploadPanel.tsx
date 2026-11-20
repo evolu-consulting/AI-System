@@ -154,7 +154,7 @@ export function UploadPanel({
           {t("contracts.list.upload.close")}
         </Button>
       </header>
-      <ul className="max-h-72 divide-y divide-rule-soft overflow-auto">
+      <ul className="divide-y divide-rule-soft">
         {items.map((i) => (
           <Row key={i.key} item={i} onRetry={onRetry} />
         ))}

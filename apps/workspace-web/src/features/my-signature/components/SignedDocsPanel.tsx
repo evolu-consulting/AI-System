@@ -77,11 +77,11 @@ export function SignedDocsPanel(p: {
         </p>
       )}
       {p.items.length > 0 && (
-        <ul className="grid gap-2">
+        <ul className="grid divide-y divide-rule-soft">
           {p.items.map((d) => (
             <li
               key={d.version_id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 py-2"
             >
               <div className="grid min-w-0 gap-0.5">
                 <span className="truncate text-sm font-medium">{d.title}</span>
