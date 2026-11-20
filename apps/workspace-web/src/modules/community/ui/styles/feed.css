@@ -624,7 +624,6 @@
   color: var(--cm-ink-3);
   font-size: 13px;
 }
-[data-mod="community"] .post .pfiles,
 [data-mod="community"] .post .pview {
   padding: 4px 16px 12px 19px;
   font-size: 13px;

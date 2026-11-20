@@ -265,7 +265,7 @@ export const PostViewSchema = z.strictObject({
   /** CR-191 BR-191-1 · nguồn bài trên bảng tin gộp: `own` = «Công ty mình» (gồm cả bài đối tác cộng đồng đăng trong công ty mình),
    * `connected` = «Đối tác» (công ty đã kết nối; bản đã che, chỉ xem). Vắng = `own`. */
   source: z.enum(POST_SOURCES).optional(),
-  /** CR-191 · chỉ bài `connected`: số tệp/ảnh đính kèm (chưa tải được chéo công ty — `media` rỗng). */
+  /** CR-191 · chỉ bài `connected`: số tệp/ảnh đính kèm (= `media.length`; CR-194: `media` đầy đủ, xem/tải như bài nội bộ). */
   fileCount: z.number().int().nonnegative().optional(),
   /** Đối tác đã vô hiệu (chỉ chủ quản thấy nhãn "đối tác đã rời"). */
   authorLeft: z.boolean().optional(),

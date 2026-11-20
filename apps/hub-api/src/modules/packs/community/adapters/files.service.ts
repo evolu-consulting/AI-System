@@ -9,6 +9,7 @@ import type { PackUow } from "../../kit/public";
 import type { CommunityBlobs } from "../application/pack-ports";
 import { downloadHeaders, sniffMime } from "../domain/file.rules";
 import type { Access } from "./community-access";
+import { crossFile } from "./feed-connected.sql";
 import { insertFile, visibleFile } from "./files.repo";
 
 export const FILE_MAX_BYTES = ATTACH_MAX_BYTES;
@@ -81,9 +82,16 @@ export async function download(
   id: string,
 ): Promise<Response> {
   const store = need(blobs);
-  const row = await uow.tenant(a.who, ({ tx }) => visibleFile(tx, a.who.tenantId, id));
-  if (!row) throw appError("NOT_FOUND");
-  const bytes = await store.get(a.who.tenantId, row.file_id);
+  // CR-194: tệp công ty mình (RLS) → không có thì tệp trên bài công ty đã kết nối mà mình thấy (DEFINER `cross_file`, một câu thứ hai).
+  const found = await uow.tenant(a.who, async ({ tx }) => {
+    const own = await visibleFile(tx, a.who.tenantId, id);
+    if (own) return { row: own, tenant: a.who.tenantId };
+    const far = a.org === null ? await crossFile(tx, id) : null; // đối tác cộng đồng (user ngoài) không có đường chéo công ty
+    return far ? { row: { ...far, id, file_id: far.blob_id }, tenant: far.tenant_id } : null;
+  });
+  if (!found) throw appError("NOT_FOUND");
+  const { row, tenant } = found;
+  const bytes = await store.get(tenant, row.file_id);
   if (!bytes) throw appError("NOT_FOUND");
   return new Response(bytes as unknown as BodyInit, {
     status: 200,

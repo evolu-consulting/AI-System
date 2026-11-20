@@ -111,8 +111,7 @@
         "active": "{{n}} bộ lọc đang bật"
       },
       "loadingMore": "Đang tải thêm bài…",
-      "viewOnly": "Bài của đối tác, chỉ xem",
-      "files": "{{n}} tệp đính kèm"
+      "viewOnly": "Bài của đối tác, chỉ xem"
     },
     "audience": {
       "label": "Người xem",

@@ -111,8 +111,7 @@
         "active": "{{n}} filters on"
       },
       "loadingMore": "Loading more posts…",
-      "viewOnly": "Partner post, view only",
-      "files": "{{n}} attachments"
+      "viewOnly": "Partner post, view only"
     },
     "audience": {
       "label": "Audience",

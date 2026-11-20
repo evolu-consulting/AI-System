@@ -34,7 +34,7 @@ export function namesOf(a: Access): Names {
 /** Id công ty hiển thị: chủ quản = id tenant. */
 export const orgIdOf = (a: Access, org: string | null): string => org ?? a.who.tenantId;
 
-const mediaView = (m: PostRow["media"][number]) => ({
+const mediaView = (m: PostRow["media"][number] | ConnectedRow["media"][number]) => ({
   id: m.id,
   kind: m.kind,
   label: m.label,
@@ -91,7 +91,7 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
   };
 }
 
-/** CR-191 · bài của công ty ĐÃ KẾT NỐI (bản đã che): không thao tác bài, không tệp tải về (chỉ số tệp); bình luận chéo (BR-191-12):
+/** CR-191 · bài của công ty ĐÃ KẾT NỐI (bản đã che): không thao tác bài; đính kèm xem/tải như bài nội bộ (CR-194, `cross_media`); bình luận chéo (BR-191-12):
  * số + 3 mới nhất người xem thấy (DEFINER). Không bao giờ có `hidden`/`hits`/`audience`/`quotes`/`hostHint`/`expiresAt`. */
 export function connectedView(r: ConnectedRow, ctx?: { a: Access; n: Names }): PostView {
   return {
@@ -111,7 +111,7 @@ export function connectedView(r: ConnectedRow, ctx?: { a: Access; n: Names }): P
     body: r.body,
     fields: r.fields,
     cats: r.cats,
-    media: [],
+    media: r.media.map(mediaView),
     fileCount: r.file_count,
     commentCount: r.comment_count ?? 0,
     // DB trả mới → cũ; hiển thị cũ → mới

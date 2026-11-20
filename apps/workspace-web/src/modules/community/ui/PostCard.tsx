@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
-import { canReportPost, isPartnerPost } from "../domain/feed-source";
+import { canReportPost } from "../domain/feed-source";
 import { dealStrip, expiryNote } from "../domain/format";
 import { saveButtonLabel } from "../domain/quote";
 import { opensCommentThread, opensThreadByDefault } from "../domain/search-hint";
@@ -152,7 +152,6 @@ export function PostCard({
   const muted = p.status === "archived" || p.status === "done" || p.status === "expired";
   const hasMenu = canReport || p.actions.some((a) => a !== "saveQuote");
   const _expiry = expiryNote(p.expiresAt);
-  const partner = isPartnerPost(p);
   return (
     <article
       className={`card post ${p.type}${muted ? " muted" : ""}`}
@@ -245,11 +244,6 @@ export function PostCard({
             else setQuote(null);
           }}
         />
-      )}
-      {partner && (p.fileCount ?? 0) > 0 && (
-        <div className="pfiles" data-testid="post-files">
-          {t("community.feed.files", { n: p.fileCount })}
-        </div>
       )}
       <div className="pact">
         <button
