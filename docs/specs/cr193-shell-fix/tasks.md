@@ -23,6 +23,8 @@ unit scroll-policy; tsc web-kit + workspace-web.
 - Lỗi do code (khung board bị sót), không chỉ do test.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
 Không thay đổi hành vi (lý do: sửa nốt phạm vi BR-193-7 đã ghi ở cr193-shell cho trang board).
 
 ## Việc còn lại
