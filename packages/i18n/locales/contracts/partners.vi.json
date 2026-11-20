@@ -235,6 +235,11 @@
         "sentEmpty": "Bạn chưa gửi lời mời nào đang chờ.",
         "withdraw": "Thu hồi",
         "withdrawn": "Đã thu hồi lời mời.",
+        "withdrawConfirm": {
+          "title": "Thu hồi lời mời gửi tới {{name}}?",
+          "body": "Họ sẽ không còn thấy lời mời này. Bạn vẫn có thể mời lại sau.",
+          "keep": "Giữ lời mời"
+        },
         "declineBtn": "Từ chối",
         "declineReason": "Lý do (không bắt buộc)",
         "declineSend": "Từ chối yêu cầu",

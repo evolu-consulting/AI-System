@@ -7,6 +7,7 @@ import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { toast } from "@ai/web-kit/ui/toast";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { confirmDialog } from "~/components/shared/dialog-bus";
 import { Btn } from "~/components/ui/Btn";
 import { Input } from "~/components/ui/input";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -139,12 +140,20 @@ function Sent({ l, locked }: { l: ConnectLink; locked: boolean }) {
         loading={withdraw.isPending}
         disabled={locked}
         title={locked ? t("contracts.connect.hub.lockedWhy") : undefined}
-        onClick={() =>
+        onClick={async () => {
+          const ok = await confirmDialog({
+            title: t("contracts.connect.hub.withdrawConfirm.title", { name: l.legal_name }),
+            body: t("contracts.connect.hub.withdrawConfirm.body"),
+            confirmLabel: t("contracts.connect.hub.withdraw"),
+            cancelLabel: t("contracts.connect.hub.withdrawConfirm.keep"),
+            danger: true,
+          });
+          if (!ok) return;
           withdraw.mutate(l.tenant_id, {
             onSuccess: () => toast(t("contracts.connect.hub.withdrawn")),
             onError: fail,
-          })
-        }
+          });
+        }}
       >
         {t("contracts.connect.hub.withdraw")}
       </Btn>

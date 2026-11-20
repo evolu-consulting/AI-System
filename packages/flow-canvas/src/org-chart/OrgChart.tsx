@@ -24,6 +24,7 @@ import {
   ORG_NODE_W,
   type OrgChartDept,
   type OrgNodeData,
+  orgFitOptions,
 } from "./org-graph";
 
 export type OrgChartLabels = {
@@ -218,7 +219,7 @@ function Inner(p: OrgChartProps) {
       nodeTypes={NODE_TYPES}
       {...ORG_FLOW_PROPS}
       fitView
-      fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
+      fitViewOptions={orgFitOptions(typeof window === "undefined" ? 1024 : window.innerWidth)}
       minZoom={0.1}
       maxZoom={1.5}
       proOptions={{ hideAttribution: true }}

@@ -64,7 +64,7 @@ export function MySignatureCards(p: {
             <img
               src={v.main.image}
               alt={t("contracts.mySig.page.mainAlt")}
-              className="max-h-40 w-full max-w-xl rounded-md border bg-card object-contain p-2"
+              className="max-h-40 w-full max-w-xl rounded-md border bg-white object-contain p-2"
             />
             <p className="text-sm text-muted-foreground">
               {t("contracts.mySig.page.since", {
@@ -82,7 +82,7 @@ export function MySignatureCards(p: {
             <img
               src={v.initials.image}
               alt={t("contracts.mySig.page.initialsAlt")}
-              className="max-h-20 w-40 rounded-md border bg-card object-contain p-1"
+              className="max-h-20 w-40 rounded-md border bg-white object-contain p-1"
             />
           </div>
         )}

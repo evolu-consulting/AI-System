@@ -162,3 +162,22 @@ export function searchDepts(depts: readonly OrgChartDept[], query: string): stri
   }
   return [...byName, ...byPerson];
 }
+
+/** CR-193 · điện thoại (< 640px): vừa khung làm chữ ~4px ⇒ zoom tối thiểu 0.85 (chữ ≥ 11px), bắt đầu ở nút gốc; người dùng vẫn kéo/zoom tự do. */
+export const ORG_PHONE_MAX_W = 640;
+export const ORG_PHONE_MIN_ZOOM = 0.85;
+export function orgFitOptions(viewportW: number): {
+  padding: number;
+  maxZoom: number;
+  minZoom?: number;
+  nodes?: { id: string }[];
+} {
+  return viewportW < ORG_PHONE_MAX_W
+    ? {
+        padding: 0.1,
+        minZoom: ORG_PHONE_MIN_ZOOM,
+        maxZoom: 1,
+        nodes: [{ id: ORG_ROOT_ID }],
+      }
+    : { padding: 0.15, maxZoom: 1 };
+}

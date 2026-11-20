@@ -42,7 +42,7 @@ export function SignaturePreview({ s }: { s: SignatureSettings }) {
           width={700}
           height={260}
           aria-label={t(k("preview.title"))}
-          className="w-full rounded-md border border-rule bg-panel"
+          className="w-full rounded-md border border-rule bg-white"
         />
         <p className="mt-2 text-caption text-dim">{t(k("preview.note"), { name })}</p>
       </div>

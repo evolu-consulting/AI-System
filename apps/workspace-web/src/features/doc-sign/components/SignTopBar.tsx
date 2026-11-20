@@ -31,7 +31,7 @@ export function TrayChip({ tray }: { tray: SignTray }) {
             src={tray.imageUrl}
             alt=""
             draggable={false}
-            className="h-6 max-w-24 shrink-0 object-contain"
+            className="h-6 max-w-24 shrink-0 rounded-sm bg-white object-contain"
           />
           <span className="whitespace-nowrap max-sm:sr-only">
             {t("contracts.docsign.tray.mine")}

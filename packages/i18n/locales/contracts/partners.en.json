@@ -235,6 +235,11 @@
         "sentEmpty": "You have no pending invitations.",
         "withdraw": "Withdraw",
         "withdrawn": "Invitation withdrawn.",
+        "withdrawConfirm": {
+          "title": "Withdraw the invitation to {{name}}?",
+          "body": "They will no longer see this invitation. You can invite again later.",
+          "keep": "Keep invitation"
+        },
         "declineBtn": "Decline",
         "declineReason": "Reason (optional)",
         "declineSend": "Decline request",

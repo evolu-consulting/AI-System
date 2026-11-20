@@ -5,6 +5,7 @@ import {
   ORG_NODE_W,
   ORG_ROOT_ID,
   type OrgChartDept,
+  orgFitOptions,
   searchDepts,
 } from "./org-graph";
 
@@ -91,5 +92,16 @@ describe("searchDepts", () => {
   test("rỗng hoặc không khớp ⇒ []", () => {
     expect(searchDepts(ALL, "  ")).toEqual([]);
     expect(searchDepts(ALL, "zzz")).toEqual([]);
+  });
+});
+
+describe("orgFitOptions (CR-193)", () => {
+  test("điện thoại: zoom tối thiểu đủ đọc, bắt đầu ở nút gốc", () => {
+    const o = orgFitOptions(390);
+    expect(o.minZoom).toBeGreaterThanOrEqual(0.85);
+    expect(o.nodes).toEqual([{ id: ORG_ROOT_ID }]);
+  });
+  test("máy tính: vừa khung cả cây", () => {
+    expect(orgFitOptions(1280).nodes).toBeUndefined();
   });
 });

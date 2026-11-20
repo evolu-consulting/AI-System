@@ -188,7 +188,7 @@ c25949b06ecb3b9b0c6b47b82cafb9274ae685d4dce40a67c0ff4771dc2d63b0  e2e/community-
 d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-web/_flow.ts
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
-1270c74fe081b7508bb22a4c9587bf032a6fd2d9fb9b1560c14a5fa57e1caa6d  e2e/community-web/baseline/linux/bang-tin-mobile.png
+2fbb4012a61adfb626822b6ccc8d0226d6f13d1836b3fc78581e7ffeceef59ee  e2e/community-web/baseline/linux/bang-tin-mobile.png
 6defa93355b5dcdd35fce70ec7a606aa2240da6894ac5b985b86ffe001e8da42  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 6201d2a08cfacbfbe79b440a10cc1f7222de48ab7597d52a89d32520961fe7b3  e2e/community-web/cr129-media.cm.ts
@@ -242,13 +242,13 @@ f28c797f1debb52ac4633baec693be6e7b8dbea21b384853bf88b5c8ecf10465  e2e/contracts-
 2d6be346c795072953f4c9aa2982ae41fecb308682f8ca1f145bd1fb0feaa5f5  e2e/contracts-web/baseline/linux/overview-work-expanded.json
 6076b1db37325483fb4536314b35215496bd1e07cefccf520375b2ec00f58475  e2e/contracts-web/baseline/linux/overview-work-expanded.png
 c253bfbb971ce5eecc9a81447edde66ba3cfd6803ff695c533a90d847be798af  e2e/contracts-web/baseline/linux/p02-partners-dark.json
-ebf101728ebafdf74f26cc1d9fc2a1f60c7335449cdc63686a234b42a0adcfb9  e2e/contracts-web/baseline/linux/p02-partners-dark.png
+dd239f6db54cb244cf60e3a8b43a18ad0e2d88edcc26e471f3d01a012024260c  e2e/contracts-web/baseline/linux/p02-partners-dark.png
 c253bfbb971ce5eecc9a81447edde66ba3cfd6803ff695c533a90d847be798af  e2e/contracts-web/baseline/linux/p02-partners-light.json
-affe24e357ca27e6d14b870f903e457b86c558f92cd60c3c361564126c2d37bb  e2e/contracts-web/baseline/linux/p02-partners-light.png
+f183cfd6e660bff7fc118353e32caca42a1c1713de640c5aa3c203b3675d1242  e2e/contracts-web/baseline/linux/p02-partners-light.png
 3bab1d2286ca388f965b82cf3c138d768f96054e26aaeace3b8a528682779d4d  e2e/contracts-web/baseline/linux/p02-partners-log.json
-047595c2c918e8103f48c3ff4e9698d9ad186b5aac4ca5a0e98351e2dbde1e61  e2e/contracts-web/baseline/linux/p02-partners-log.png
+91aac3c6baa67f3087b6674fd148609c69011845040aa41ada657a0587228a40  e2e/contracts-web/baseline/linux/p02-partners-log.png
 40f52f192a82b0dced911e53d0b356d0ee844b9d47e048972c54653d9fbb21f2  e2e/contracts-web/baseline/linux/p02-partners-mobile.json
-6b7fae7fbac75ce0a3a9957c9519e0f839d123c66627e640e7b62d95bc16716d  e2e/contracts-web/baseline/linux/p02-partners-mobile.png
+150084ecf6481af06e9253d1fc9e960a463285d697803dc5f229dbcfca2517a3  e2e/contracts-web/baseline/linux/p02-partners-mobile.png
 637d404d40cb147144343fe9579b7301d7cc01ca336533fd0d0187dadb262b92  e2e/contracts-web/baseline/linux/s01-login-dark.json
 f0b26cde59b9b5c4596978903bc5eee938c392fadeb10b9a9e31a29cd45e5e79  e2e/contracts-web/baseline/linux/s01-login-dark.png
 637d404d40cb147144343fe9579b7301d7cc01ca336533fd0d0187dadb262b92  e2e/contracts-web/baseline/linux/s01-login-light.json
@@ -272,9 +272,9 @@ ef5e92a99a051479f7b2d87d4e593965c5afcc84e269398ad025d06e50b4cd88  e2e/contracts-
 ae23ca80c10bbc1d223d7c27681c19076414e7c09a57776270eed72dd2748f6c  e2e/contracts-web/baseline/linux/s05-failed-light.json
 1f2f3f9626043fee3a43990f6ee72aaecc5c80a56995f11d308ae77e0a463923  e2e/contracts-web/baseline/linux/s05-failed-light.png
 544b6bd489babc6630ee0a4bfe0d09f4cdeb71938ae1478ff587c38b04145dff  e2e/contracts-web/baseline/linux/s05-review-dark.json
-b004223230fbba018f4189311df01fa7e863f6845a85c4e31437c488844aacbb  e2e/contracts-web/baseline/linux/s05-review-dark.png
+adc0d8bf95aa88cbd5a17a0b4f8ec312e10e13938bddea5ec318e39d11b3d05c  e2e/contracts-web/baseline/linux/s05-review-dark.png
 544b6bd489babc6630ee0a4bfe0d09f4cdeb71938ae1478ff587c38b04145dff  e2e/contracts-web/baseline/linux/s05-review-light.json
-41c4d27bebb05e8e3398deda96300a7802cb5b11a2ac00042d14db990cc95e0e  e2e/contracts-web/baseline/linux/s05-review-light.png
+f87077f515b29affff875f0edc5787e59b050f6a2b709dc549a50118b6092ed3  e2e/contracts-web/baseline/linux/s05-review-light.png
 e872ccdfa6ee0d60fb99af2bc30a97ce75f5fba0f602772453b9039e71d28bd7  e2e/contracts-web/baseline/linux/s05-review-mobile.json
 f8dfd83691a439cc677ccf1dddcc2167b8575515ad1b9704c609f6cd2c0112fb  e2e/contracts-web/baseline/linux/s05-review-mobile.png
 5e77a086ccffdb36852ec8a3f367106edbe2d5db0929488cc3be80b54a5c254e  e2e/contracts-web/baseline/linux/s08-prices-dark.json
@@ -439,6 +439,8 @@ e8af07a5543cb008f0ec62224455e5e1db954e3b188c31a1465fa1c410f8ae7b  e2e/contracts-
 ecbf934144efd4faabba6c0b97b0d65d1f23bd2c7bc7c6723f97032069a90074  e2e/contracts-web/cr191-search-mobile.cw.ts
 e7f6e55c0714ce8a382881e2f4c1027a59b2e94ca34e3ed9c9896a6b48c989f1  e2e/contracts-web/cr193-pending.cw.ts
 ae2e59609f42b7ab5a72e996e0f1fb00921674ca06399d8e8e40c399cbab3020  e2e/contracts-web/cr193-scroll.cw.ts
+e1074e68fd45c422e3050153dba084b40d9820c65ea66e4216b1f6b26b35aeb6  e2e/contracts-web/cr193-uat-partners.cw.ts
+3fb18babc001c3c4920b8784875aa96944cdc08522039e25437b4427a86621c8  e2e/contracts-web/cr193-uat-visual.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts

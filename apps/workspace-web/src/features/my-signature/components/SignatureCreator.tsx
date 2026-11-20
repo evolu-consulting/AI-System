@@ -175,7 +175,7 @@ export function SignatureCreator(p: SignatureCreatorProps) {
           width={PAD_W}
           height={PAD_H}
           aria-label={t("contracts.mySig.padAria")}
-          className="w-full max-w-xl touch-none rounded-md border border-dashed bg-card"
+          className="w-full max-w-xl touch-none rounded-md border border-dashed bg-white"
           onPointerDown={down}
           onPointerMove={move}
           onPointerUp={up}
@@ -262,7 +262,7 @@ export function SignatureCreator(p: SignatureCreatorProps) {
           height={260}
           role="img"
           aria-label={t("contracts.mySig.previewTitle")}
-          className="w-full max-w-xl rounded-md border bg-card"
+          className="w-full max-w-xl rounded-md border bg-white"
         />
       </div>
 
