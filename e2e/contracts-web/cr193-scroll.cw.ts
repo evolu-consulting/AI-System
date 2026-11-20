@@ -32,7 +32,7 @@ test("chuyển trang về đầu, Back khôi phục vị trí đã cuộn", asyn
   await page.goto("/contracts/partners");
   await page.locator('[data-scroll-restoration-id="main-scroll-board"]').evaluate((el) => {
     const pad = document.createElement("div");
-    pad.style.height = "4000px";
+    pad.style.cssText = "height:4000px;flex:none"; // flex:none — khung board là cột flex, đệm rỗng sẽ bị co về 0
     el.appendChild(pad);
     el.scrollTop = 600;
   });
@@ -49,7 +49,7 @@ test("chuyển trang về đầu, Back khôi phục vị trí đã cuộn", asyn
   await page.locator('[data-scroll-restoration-id="main-scroll-board"]').evaluate((el) => {
     if (el.scrollHeight < 3000) {
       const pad = document.createElement("div");
-      pad.style.height = "4000px";
+      pad.style.cssText = "height:4000px;flex:none"; // flex:none — khung board là cột flex, đệm rỗng sẽ bị co về 0
       el.appendChild(pad);
     }
   });
