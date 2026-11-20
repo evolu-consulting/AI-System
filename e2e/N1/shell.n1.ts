@@ -108,7 +108,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       ["/cks", /\/contracts\/products$/],
       ["/cks/abc", /\/contracts\/products$/],
       ["/sourcing", /\/contracts\/products$/],
-      ["/settings", /\/contracts\/settings\/members$/],
+      ["/settings", /\/contracts\/org$/], // CR-189 BR-189-1: vào Nội bộ mở Sơ đồ tổ chức trước
       ["/settings/scoring", /\/contracts\/partners$/],
       ["/partners", /\/contracts\/partners$/],
       ["/products?sp=p1", /\/contracts\/products\?sp=p1$/],
