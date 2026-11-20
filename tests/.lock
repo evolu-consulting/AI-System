@@ -204,6 +204,7 @@ fe9b434ad26c6167389965a2ad09c7ccb0f7c957f4d2c407dce64d40c9891dc3  e2e/community-
 c2594eca430b6728befd22be9ca246e613787bbaa347e62dbe459f68d9d10967  e2e/community-web/cr191-composer-audience.cm.ts
 e4ab57478c044cde901787b07e68b16ea2e31549e810459ef531ab6f61c656c1  e2e/community-web/cr191-feed-ui.cm.ts
 dc6bd7ed1d1b90e9925ff88f226a7f4440314221c462286047a8ad98b25eca36  e2e/community-web/cr192-crop.cs.ts
+4d3c042ac9c0d719f2a5a3b346c07f9151ca29e3f014836b52ff3016659dbd39  e2e/community-web/cr193-crop-paint.cm.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 26e3bc6e70f6c46dc691816921ff34f525008f0ef8d37ee15cc7f02a854a66bc  e2e/community-web/feed.cm.ts
 13fc117b2e04051c8ef5607a9b71345b3bcaef1d0fc0194d047c9f80b53282aa  e2e/community-web/fix-cr186-ui.cm.ts

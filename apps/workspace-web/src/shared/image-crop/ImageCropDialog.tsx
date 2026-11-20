@@ -36,13 +36,13 @@ export function ImageCropDialog({
   const [zoom, setZoom] = useState(1);
   const [c, setC] = useState({ cx: src.width / 2, cy: src.height / 2 });
   const rect = cropRect({ w: src.width, h: src.height }, spec.aspect, zoom, c);
-  const cv = useRef<HTMLCanvasElement | null>(null);
+  // Canvas nằm trong Portal của Radix (gắn SAU lần render đầu) ⇒ giữ trong state: gắn xong thì render lại và hiệu ứng vẽ chạy (useRef để lại khung trống).
+  const [cv, setCv] = useState<HTMLCanvasElement | null>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    const el = cv.current;
-    if (!el) return;
-    el.getContext("2d")?.drawImage(
+    if (!cv) return;
+    cv.getContext("2d")?.drawImage(
       src.draw,
       rect.sx,
       rect.sy,
@@ -50,8 +50,8 @@ export function ImageCropDialog({
       rect.sh,
       0,
       0,
-      el.width,
-      el.height,
+      cv.width,
+      cv.height,
     );
   });
 
@@ -85,7 +85,7 @@ export function ImageCropDialog({
         </DialogHeader>
         <div className="flex flex-col items-center gap-3" data-testid="crop-dialog">
           <canvas
-            ref={cv}
+            ref={setCv}
             width={VIEW_W * 2}
             height={viewH * 2}
             data-testid="crop-view"
