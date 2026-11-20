@@ -54,3 +54,13 @@ Tám luật; mỗi luật một dòng + cái dùng. Máy kiểm: e2e `cr180-mobi
 3. Trạng thái chọn chỉ đổi màu nền/chữ, không đổi độ đậm, padding, viền. Sai: tab đang chọn `font-bold` hoặc thêm `border` ⇒ bề rộng nhảy.
 4. Khung chờ đúng kích thước nội dung thật (`Skeleton` cùng cao/rộng); ảnh có `aspect-ratio` hoặc width/height. Sai: ảnh không cỡ làm trang giật khi tải xong.
 5. e2e đo bounding box trước và sau khi bấm (tab, lọc, chọn): lệch ⇒ đỏ.
+
+## Thẻ — CR-193 (L1–L4)
+1. Mọi thẻ nền `--card` (sáng: trắng `#fff`) trên nền trang `--background` (`#f4f4f9`). Sai: thẻ nền xám/`muted` trên nền trang.
+2. Không thẻ trong thẻ: tách phần bằng tiêu đề nhỏ hoặc đường kẻ mảnh `--row-divider`. Ngoại lệ: ô nhập liệu; khối `--muted` không viền (bong bóng bình luận, ghi chú). Sai: khung viền + bo góc lồng trong khung.
+3. Mỗi trang một thanh cuộn (của trang); danh sách/bảng không cuộn riêng. Ngoại lệ: hộp thoại, danh sách thả xuống, khung Tin nhắn toàn màn.
+4. Cỡ thẻ: đệm 16px (điện thoại 12px), cách nhau 12px, bo 10px.
+
+## Hộp thoại và chuyển trang — CR-193
+- BR-193-6: tiêu đề (`leading-6`) và nút «x» (ô 24×24, `flex items-center`) cùng một hàng 24px ⇒ canh giữa dọc; áp cho `DialogContent`/`SheetContent`, có hay không mô tả, điện thoại toàn màn. Sai: nút «x» `top-4` lệch so với tiêu đề.
+- BR-193-7: đổi đường dẫn ⇒ vùng cuộn chính về đầu, Back/Forward ⇒ khôi phục vị trí; chỉ đổi query (lọc, tab) ⇒ không nhảy. Dùng `routerScrollOptions()` (`scroll-policy.ts`) khi tạo router; vùng cuộn chính của Shell gắn `data-scroll-restoration-id="main-scroll"`.

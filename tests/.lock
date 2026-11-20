@@ -437,6 +437,7 @@ aa5ab30af9c32c2e0765120220a8d4baaacd36ef0211df77a79939e0cd6d5ab7  e2e/contracts-
 d13d5e553180ba1b68804dc24eb5f8912a64ea4e302a840d0866034cf7db0ed7  e2e/contracts-web/cr188-verify.cw.ts
 e8af07a5543cb008f0ec62224455e5e1db954e3b188c31a1465fa1c410f8ae7b  e2e/contracts-web/cr189-avatar-list.cw.ts
 ecbf934144efd4faabba6c0b97b0d65d1f23bd2c7bc7c6723f97032069a90074  e2e/contracts-web/cr191-search-mobile.cw.ts
+4812e84db9773c59326b51c0fc33370cbb022e52779aef83674af65f52fdb757  e2e/contracts-web/cr193-scroll.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts

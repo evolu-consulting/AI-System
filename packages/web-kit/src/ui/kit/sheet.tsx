@@ -56,7 +56,7 @@ export function SheetContent({
         {showCloseButton && (
           <P.Close
             data-slot="sheet-close"
-            className="absolute top-4 right-4 rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
+            className="absolute top-4 right-4 flex size-6 items-center justify-center rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
           >
             <XIcon />
             <span className="sr-only">{closeLabel}</span>
@@ -81,7 +81,11 @@ export const SheetFooter = ({ className, ...p }: React.ComponentProps<"div">) =>
   <div data-slot="sheet-footer" className={cn("flex shrink-0 gap-2", className)} {...p} />
 );
 export const SheetTitle = ({ className, ...p }: React.ComponentProps<typeof P.Title>) => (
-  <P.Title data-slot="sheet-title" className={cn("text-lg font-semibold", className)} {...p} />
+  <P.Title
+    data-slot="sheet-title"
+    className={cn("text-lg leading-6 font-semibold", className)}
+    {...p}
+  />
 );
 export const SheetDescription = ({
   className,

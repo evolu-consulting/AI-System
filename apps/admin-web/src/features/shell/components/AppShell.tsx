@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
           {/* `relative`: phần tử `sr-only` (absolute) bị cắt trong vùng cuộn, không đẩy thanh cuộn của body. */}
-          <div className="relative flex-1 overflow-y-auto">
+          <div data-scroll-restoration-id="main-scroll" className="relative flex-1 overflow-y-auto">
             <main id="main" tabIndex={-1} className="mx-auto w-full max-w-content p-6 outline-none">
               <ConnectionBanner />
               <QuotaBanner />

@@ -53,7 +53,7 @@ export function DialogContent({
         {showCloseButton && (
           <P.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity duration-[var(--duration-fast)] hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
+            className="absolute top-6 right-4 flex size-6 items-center justify-center rounded-sm opacity-70 transition-opacity duration-[var(--duration-fast)] hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
           >
             <XIcon />
             <span className="sr-only">{closeLabel}</span>
@@ -99,7 +99,7 @@ export function DialogTitle({ className, ...props }: React.ComponentProps<typeof
   return (
     <P.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("text-lg leading-6 font-semibold", className)}
       {...props}
     />
   );
