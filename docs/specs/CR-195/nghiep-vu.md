@@ -18,3 +18,7 @@ Nguồn: người dùng 2026-11-20 (ảnh hộp «Viết bài» máy tính + đi
 ## Quyết định trong lúc làm
 - Người dùng «vẫn muốn giữ auth» ⇒ ảnh vẫn qua kiểm đăng nhập + quyền mỗi lần tải (không link công khai, không đổi sang cookie). Đo code: kiểm JWT cục bộ + cache cấu hình (`apps/hub-api/src/lib/auth.middleware.ts:46`) — không phải chỗ chậm. Chỗ chậm: `Cache-Control: private, no-store` (`community/domain/file.rules.ts:122`), ảnh gốc đầy đủ, đọc hết tệp vào bộ nhớ (`files.service.ts:94`).
 - BR-195-7 sửa mặc định: `private, max-age=86400` (1 ngày, không `immutable` dài hạn) — đánh đổi máy dùng chung.
+
+## Bổ sung 2026-11-21 (UAT người dùng)
+- **BR-195-8** «Ai thấy bài» = «Chọn công ty…» ⇒ bấm mở hộp chọn công ty (tìm theo tên, danh sách công ty đã kết nối có ô chọn, nút «Xong (n)»; điện thoại toàn màn). Ngoài form chỉ hiện tóm tắt đã chọn (vd «2 công ty: Nitigroup, Preschool» + «Sửa»), không bày danh sách chip trong form.
+- **BR-195-9** Hộp «Viết bài» điện thoại: hàng loại bài canh trái, không cắt chip đầu (cuộn ngang nếu thiếu chỗ), không có khoảng trống giữa hàng loại bài và ô viết — ô viết nằm ngay dưới và giãn chiếm phần trống.
