@@ -10,7 +10,7 @@ const HOW = { draw: "howDraw", upload: "howUpload", type: "howType" } as const;
 
 function Card(p: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="grid content-start gap-3 rounded-lg border bg-card p-4">
+    <section className="grid content-start gap-3 rounded-[10px] border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold">{p.title}</h2>
         {p.action}

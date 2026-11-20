@@ -181,128 +181,134 @@ export function ContractBody(p: {
   );
   const manualSide = showManualSide(c, write && sup === null);
   const reading = c.extract_state === "reading" && c.status === "draft" && c.submit_round === 0;
+  const head = (
+    <ContractHead
+      c={c}
+      signed={session ? allSigned(session) : false}
+      title={c.title}
+      lead={lead}
+      sticky={rule.sticky}
+      rename={{ enabled: rule.rename, onSave: rename }}
+      actions={
+        <HeadActions
+          id={id}
+          rule={rule}
+          saveFirst={info.saveFirst}
+          onChanged={refresh}
+          canDelete={c.can.delete === true}
+          reconcileBlock={manualBlock}
+          approval={{
+            ...ap.act,
+            view: apView,
+            busy: ap.busy || info.busy,
+            pageConfirm: () => void info.confirmSave.start(),
+            saveDraft: () => void info.save(),
+            cancel: onCancel,
+          }}
+        />
+      }
+    />
+  );
   return (
-    <div
-      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[360px_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
-    >
-      <div className="min-w-0 flex-1 max-lg:w-full">
-        <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">
-          <ContractHead
-            c={c}
-            signed={session ? allSigned(session) : false}
-            title={c.title}
-            lead={lead}
-            sticky={rule.sticky}
-            rename={{ enabled: rule.rename, onSave: rename }}
-            actions={
-              <HeadActions
-                id={id}
-                rule={rule}
-                saveFirst={info.saveFirst}
-                onChanged={refresh}
-                canDelete={c.can.delete === true}
-                reconcileBlock={manualBlock}
-                approval={{
-                  ...ap.act,
-                  view: apView,
-                  busy: ap.busy || info.busy,
-                  pageConfirm: () => void info.confirmSave.start(),
-                  saveDraft: () => void info.save(),
-                  cancel: onCancel,
-                }}
-              />
-            }
-          />
-          {/* Lý do chặn do ký đã nằm trong danh sách kiểm tra của thẻ «Chuẩn bị chỗ ký» ⇒ không nói hai lần. */}
-          {rule.submitBlocked && !(signBlock && showsPrepCard(c.status, session)) && (
-            <p role="status" data-testid="submit-blocked" className="mb-3 text-sm text-late">
-              {t(SUBMIT_BLOCK_KEY[rule.submitBlockKind ?? "no_flow"])}
-            </p>
-          )}
-          {session && <SignersStrip session={session} />}
-          {session && showsPrepCard(c.status, session) && <PrepCard id={id} session={session} />}
-          {ondocStep === "mine" && session && <SignTurnCard id={id} session={session} />}
-          {ondocStep === "other" && session && <SignWaitCard session={session} />}
-          {session && <PartnerWaitCard id={id} session={session} />}
-          <HeadBanner kind={rule.banner} c={c} partner={partner} />
-          <ManualBanner
-            c={c}
-            write={write && sup === null}
-            file={file}
-            nameOf={memberName}
-            dirty={info.edited}
-          />
-          <ExtractDialog open={reading} name={c.file?.name ?? c.title} />
-          <PartnerSendPanel id={id} write={write} />
-          <SignSessionCard id={id} write={write} />
-          {/* Bước Ký trên tài liệu đang mở ⇒ KHÔNG hiện khối «Ký số / Tải lên bản đã ký» cũ (chỉ một đường ký). */}
-          {ondocStep === null && !hideLegacyEsign(session) && (
-            <EsignPanel id={id} locked={c.status === "done"} write={write} />
-          )}
-          <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
-          <ContractFilesPanel id={id} />
-          <AppendixPanel c={c} write={write && sup === null} />
-          <SaveNotice err={info.err ?? ap.err} />
-          <StatsRow c={c} today={today} />
-          <KindSummary c={c} write={write && sup === null} today={today} />
-          {c.doc?.doc_type !== "framework" && (
-            <MilestoneList
+    <div className="w-full">
+      {manualSide && <div className="mb-4">{head}</div>}
+      <div
+        className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[360px_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
+      >
+        <div className="min-w-0 flex-1 max-lg:w-full">
+          <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">
+            {!manualSide && head}
+            {/* Lý do chặn do ký đã nằm trong danh sách kiểm tra của thẻ «Chuẩn bị chỗ ký» ⇒ không nói hai lần. */}
+            {rule.submitBlocked && !(signBlock && showsPrepCard(c.status, session)) && (
+              <p role="status" data-testid="submit-blocked" className="mb-3 text-sm text-late">
+                {t(SUBMIT_BLOCK_KEY[rule.submitBlockKind ?? "no_flow"])}
+              </p>
+            )}
+            {session && <SignersStrip session={session} />}
+            {session && showsPrepCard(c.status, session) && <PrepCard id={id} session={session} />}
+            {ondocStep === "mine" && session && <SignTurnCard id={id} session={session} />}
+            {ondocStep === "other" && session && <SignWaitCard session={session} />}
+            {session && <PartnerWaitCard id={id} session={session} />}
+            <HeadBanner kind={rule.banner} c={c} partner={partner} />
+            <ManualBanner
               c={c}
-              partner={partner}
-              write={write}
-              today={today}
-              superseded={sup !== null}
+              write={write && sup === null}
+              file={file}
+              nameOf={memberName}
+              dirty={info.edited}
             />
-          )}
-          {ap.section}
-          <HistoryPanel id={id} />
-          <ProductLinkDialog
-            target={info.confirmSave.target}
-            busy={info.confirmSave.busy}
-            onCancel={info.confirmSave.cancel}
-            onConfirm={(links) => void info.confirmSave.confirmLinks(links)}
-          />
-          <FramePanel c={c} write={write} />
-          <LegalBanner warning={c.legal_warning} />
-          {c.doc?.doc_type === "deal" && write && !sup && (
-            <div className="mb-4 flex justify-end">
-              <PromoteDeal id={id} />
-            </div>
-          )}
-          <Fold on={reviewer} label={t("contracts.review.foldEdit")}>
-            <ManagePanel c={c} write={write} />
-            {c.extract_state === "failed" && c.status === "draft" ? (
-              <ExtractFailed file={file} id={id} write={write} error={c.error} />
-            ) : (
-              <DetailGrid
+            <ExtractDialog open={reading} name={c.file?.name ?? c.title} />
+            <PartnerSendPanel id={id} write={write} />
+            <SignSessionCard id={id} write={write} />
+            {/* Bước Ký trên tài liệu đang mở ⇒ KHÔNG hiện khối «Ký số / Tải lên bản đã ký» cũ (chỉ một đường ký). */}
+            {ondocStep === null && !hideLegacyEsign(session) && (
+              <EsignPanel id={id} locked={c.status === "done"} write={write} />
+            )}
+            <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
+            <ContractFilesPanel id={id} />
+            <AppendixPanel c={c} write={write && sup === null} />
+            <SaveNotice err={info.err ?? ap.err} />
+            <StatsRow c={c} today={today} />
+            <KindSummary c={c} write={write && sup === null} today={today} />
+            {c.doc?.doc_type !== "framework" && (
+              <MilestoneList
                 c={c}
-                f={info.f}
-                onSet={info.set}
-                canSave={canSave}
-                saveButton={confirm ? undefined : saveButton}
-                write={write}
                 partner={partner}
+                write={write}
                 today={today}
-                info={info}
-                lockedKeys={lock.lockedKeys}
-                right={right}
-                stacked={manualSide}
+                superseded={sup !== null}
               />
             )}
-          </Fold>
-          <OriginalFileHost
-            open={origOpen}
-            contractId={id}
-            file={c.file}
-            hasSource={c.has_source}
-            appendices={c.appendices}
-            onClose={() => setOrigOpen(false)}
-          />
-          <ContractLog contractId={id} status={c.status} />
-          {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
+            {ap.section}
+            <HistoryPanel id={id} />
+            <ProductLinkDialog
+              target={info.confirmSave.target}
+              busy={info.confirmSave.busy}
+              onCancel={info.confirmSave.cancel}
+              onConfirm={(links) => void info.confirmSave.confirmLinks(links)}
+            />
+            <FramePanel c={c} write={write} />
+            <LegalBanner warning={c.legal_warning} />
+            {c.doc?.doc_type === "deal" && write && !sup && (
+              <div className="mb-4 flex justify-end">
+                <PromoteDeal id={id} />
+              </div>
+            )}
+            <Fold on={reviewer} label={t("contracts.review.foldEdit")}>
+              <ManagePanel c={c} write={write} />
+              {c.extract_state === "failed" && c.status === "draft" ? (
+                <ExtractFailed file={file} id={id} write={write} error={c.error} />
+              ) : (
+                <DetailGrid
+                  c={c}
+                  f={info.f}
+                  onSet={info.set}
+                  canSave={canSave}
+                  saveButton={confirm ? undefined : saveButton}
+                  write={write}
+                  partner={partner}
+                  today={today}
+                  info={info}
+                  lockedKeys={lock.lockedKeys}
+                  right={right}
+                  stacked={manualSide}
+                />
+              )}
+            </Fold>
+            <OriginalFileHost
+              open={origOpen}
+              contractId={id}
+              file={c.file}
+              hasSource={c.has_source}
+              appendices={c.appendices}
+              onClose={() => setOrigOpen(false)}
+            />
+            <ContractLog contractId={id} status={c.status} />
+            {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
+          </div>
         </div>
+        <ManualSide c={c} show={write && sup === null} />
       </div>
-      <ManualSide c={c} show={write && sup === null} />
     </div>
   );
 }

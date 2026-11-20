@@ -73,7 +73,7 @@ export default function FlowCanvas({ flow, selectedId, onPick }: FlowCanvasProps
   const box = useMemo(() => flowBox(nodes), [nodes]);
   return (
     <section
-      className="mb-4 max-h-[520px] w-full overflow-auto rounded-xl border border-rule bg-sunk"
+      className="mb-4 w-full overflow-x-auto rounded-[10px] bg-sunk"
       data-testid="flow-canvas"
       aria-label={t("contracts.flow.current.canvas.aria")}
     >
