@@ -4,12 +4,24 @@ import { asHub } from "./dataset";
 import { installV2f } from "./v2f-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
+test.use({ viewport: { width: 1280, height: 720 } }); // ≥ md: khung board tự cuộn
 
 const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
-const MAIN = '[data-scroll-restoration-id="main-scroll"]';
-const top = (page: Page) => page.evaluate((s) => document.querySelector(s)?.scrollTop ?? -1, MAIN);
+// Vùng cuộn chính: `main` (trang thường) hoặc khung `board` bên trong (danh sách/đối tác/sản phẩm từ md) — lấy cái đang có, ưu tiên board.
+const MAIN =
+  '[data-scroll-restoration-id="main-scroll-board"], [data-scroll-restoration-id="main-scroll"]';
+const top = (page: Page) =>
+  page.evaluate((s) => {
+    const all = [...document.querySelectorAll(s)];
+    return (
+      (
+        all.find((e) => e.getAttribute("data-scroll-restoration-id") === "main-scroll-board") ??
+        all[0]
+      )?.scrollTop ?? -1
+    );
+  }, MAIN);
 
 test("chuyển trang về đầu, Back khôi phục vị trí đã cuộn", async ({ page }) => {
   await installV2f(page, { role: "editor" });
@@ -18,7 +30,7 @@ test("chuyển trang về đầu, Back khôi phục vị trí đã cuộn", asyn
     json(r, 200, { items: [], total: 0 }),
   );
   await page.goto("/contracts/partners");
-  await page.locator(MAIN).evaluate((el) => {
+  await page.locator('[data-scroll-restoration-id="main-scroll-board"]').evaluate((el) => {
     const pad = document.createElement("div");
     pad.style.height = "4000px";
     el.appendChild(pad);
@@ -34,7 +46,7 @@ test("chuyển trang về đầu, Back khôi phục vị trí đã cuộn", asyn
   await expect.poll(() => top(page)).toBe(0);
   await page.goBack();
   await expect(page).toHaveURL(/\/contracts\/partners$/);
-  await page.locator(MAIN).evaluate((el) => {
+  await page.locator('[data-scroll-restoration-id="main-scroll-board"]').evaluate((el) => {
     if (el.scrollHeight < 3000) {
       const pad = document.createElement("div");
       pad.style.height = "4000px";

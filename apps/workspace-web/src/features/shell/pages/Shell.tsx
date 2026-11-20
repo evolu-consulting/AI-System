@@ -2,6 +2,7 @@
 // nút nổi "Mở trợ lý AI" · sheet ở điện thoại. Layout từ mgmt-app Shell.tsx; quyền (`write`/`owner`) do PackFrame truyền vào.
 
 import { useUnreadTotal } from "@ai/messages-web/hooks/use-unread";
+import { BOARD_SCROLL_ID } from "@ai/web-kit/scroll-policy";
 import { Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
@@ -90,6 +91,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
             )}
           >
             <div
+              data-scroll-restoration-id={layout === "board" ? BOARD_SCROLL_ID : undefined}
               className={cn(
                 "mx-auto w-full",
                 fullscreen && "flex h-full min-h-0 flex-col",

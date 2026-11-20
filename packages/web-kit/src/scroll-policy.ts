@@ -4,6 +4,9 @@
 /** Thuộc tính đánh dấu vùng cuộn chính (không phải window) để router reset/khôi phục. */
 export const MAIN_SCROLL_ID = "main-scroll";
 export const MAIN_SCROLL_SELECTOR = `[data-scroll-restoration-id="${MAIN_SCROLL_ID}"]`;
+/** Trang bố cục `board` (danh sách/đối tác/sản phẩm): `main` đứng yên, khung nội dung bên trong mới cuộn từ md. */
+export const BOARD_SCROLL_ID = "main-scroll-board";
+export const BOARD_SCROLL_SELECTOR = `[data-scroll-restoration-id="${BOARD_SCROLL_ID}"]`;
 
 /** Có cho router xử lý cuộn không: lần đầu hoặc đổi đường dẫn ⇒ có; cùng đường dẫn ⇒ không. */
 export const shouldHandleScroll = (prevPath: string | undefined, nextPath: string): boolean =>
@@ -21,5 +24,5 @@ export function createScrollRestoration(): (ctx: { location: { pathname: string 
 
 export const routerScrollOptions = () => ({
   scrollRestoration: createScrollRestoration(),
-  scrollToTopSelectors: [MAIN_SCROLL_SELECTOR],
+  scrollToTopSelectors: [MAIN_SCROLL_SELECTOR, BOARD_SCROLL_SELECTOR],
 });
