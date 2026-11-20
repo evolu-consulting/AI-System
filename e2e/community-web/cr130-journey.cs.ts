@@ -220,13 +220,15 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
     return item;
   };
   const link = async (item: ReturnType<Page["getByTestId"]>) => {
-    const listed = host.page.waitForResponse((r) => r.url().includes("/pack/contracts/partners"));
+    const listed = host.page.waitForResponse(
+      (r) => r.request().method() === "GET" && r.url().includes("/pack/contracts/partners/search"),
+    ); // đúng route «Chọn đối tác»; tiền tố `/partners` còn khớp `/partners/page` của trang Đối tác (trả object ⇒ rows.some lỗi)
     await item.getByTestId("join-mode-link").click();
     const lr = await listed;
     const rows = (await lr.json().catch(() => [])) as { name?: string }[];
     expect(
       { status: lr.status(), hasP2: rows.some((x) => x.name === P2), n: rows.length },
-      "danh sách «Chọn đối tác» (GET /pack/contracts/partners)",
+      "danh sách «Chọn đối tác» (GET /pack/contracts/partners/search)",
     ).toMatchObject({ status: 200, hasP2: true });
     await pickOption(item.getByLabel("Chọn đối tác"), { label: P2 });
     await expect(item.getByTestId("join-approve-summary")).toContainText(P2);
