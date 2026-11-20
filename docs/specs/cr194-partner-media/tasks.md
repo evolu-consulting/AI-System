@@ -37,7 +37,7 @@ Người xem công ty đã kết nối, được bài cho thấy, xem ảnh/vide
 - Kịch bản: khi ngắt kết nối hoặc A tắt Bảng tin thì tệp 404 ngay [test: apps/hub-api/src/modules/packs/community/adapters/connected-media.int.test.ts » (b2) ngắt kết nối hoặc A tắt Bảng tin ⇒ tệp mất ngay (kiểm lại mỗi lần)]
 - Kịch bản: khi công ty không kết nối xin tệp thì 404 [test: apps/hub-api/src/modules/packs/community/adapters/connected-media.int.test.ts » (c) công ty không kết nối (C) ⇒ feed rỗng, mọi tệp 404 kể cả bài «Tất cả đối tác»]
 - Kịch bản: khi đối tác chỉ xem thì không sửa/xoá được tệp, media [test: apps/hub-api/src/modules/packs/community/adapters/connected-media.int.test.ts » (d) đối tác chỉ xem: không sửa/xoá hàng tệp, không sửa/xoá media của A, không gắn tệp của A vào bài mình]
-- Kịch bản: khi người xem mở bảng tin thì bài đối tác không còn dòng «n tệp đính kèm» [test: thủ công — bỏ khối JSX; không có e2e nào kiểm dòng này (grep e2e/ rỗng)]
+- Kịch bản: khi người xem mở bảng tin thì bài đối tác hiện ảnh/tệp thay dòng «n tệp đính kèm» [test: apps/hub-api/src/modules/packs/community/adapters/connected-media.int.test.ts » (a) Vy (B, không phải người đăng) thấy media của bài được cho thấy, đúng khuôn MediaItem, và tải được tệp (200 + byte)]
 
 ## Việc còn lại
 - e2e hành trình «ảnh bài đối tác» (viết + chạy cuối đợt do điều phối) — chưa có.
