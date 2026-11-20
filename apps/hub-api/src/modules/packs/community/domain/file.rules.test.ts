@@ -64,4 +64,11 @@ describe("safeFileName / header [CR-118]", () => {
     expect(h["X-Content-Type-Options"]).toBe("nosniff");
     expect(h["Content-Security-Policy"]).toContain("sandbox");
   });
+
+  it("[CR-195] tải tệp: Cache-Control private 1 ngày, không no-store, không public", () => {
+    const h = downloadHeaders({ name: "a.png", mime: "image/png", size: 3 });
+    expect(h["Cache-Control"]).toBe("private, max-age=86400");
+    expect(h["Cache-Control"]).not.toContain("public");
+    expect(h["Cache-Control"]).not.toContain("no-store");
+  });
 });

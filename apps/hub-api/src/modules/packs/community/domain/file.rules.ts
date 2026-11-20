@@ -111,7 +111,11 @@ export function contentDisposition(name: string, mime: string): string {
   return `${type}; filename="${fallback}"; filename*=UTF-8''${pct}`;
 }
 
-/** Header tải về cố định (nosniff + CSP khoá mọi thứ + không cache dùng chung). */
+/** CR-195 · BR-195-7: tệp theo id không đổi nội dung ⇒ trình duyệt giữ 1 ngày (`private`: proxy/CDN không giữ). Chỉ gắn cho
+ *  phản hồi 200 đã qua kiểm quyền; lỗi (404…) đi đường `mapError`, không có header này. */
+export const DOWNLOAD_CACHE_CONTROL = "private, max-age=86400";
+
+/** Header tải về cố định (nosniff + CSP khoá mọi thứ + cache riêng của trình duyệt, không cache dùng chung). */
 export function downloadHeaders(f: { name: string; mime: string; size: number }) {
   return {
     "Content-Type": f.mime,
@@ -119,6 +123,6 @@ export function downloadHeaders(f: { name: string; mime: string; size: number })
     "Content-Disposition": contentDisposition(f.name, f.mime),
     "X-Content-Type-Options": "nosniff",
     "Content-Security-Policy": "default-src 'none'; sandbox",
-    "Cache-Control": "private, no-store",
+    "Cache-Control": DOWNLOAD_CACHE_CONTROL,
   };
 }

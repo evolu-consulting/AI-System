@@ -1,5 +1,6 @@
 // CR-102 · C3 · adapter http: đúng route/method của hub-api `/pack/community/*` (fetch giả, không mạng).
 import { afterEach, describe, expect, it } from "bun:test";
+import { clearFileBlobs } from "~/shared/kernel/file-blob-cache";
 import { createHttpApi, feedQueryString } from "./http";
 
 const real = globalThis.fetch;
@@ -48,5 +49,24 @@ describe("community http adapter", () => {
     ]);
     capture(204);
     expect(await api.postAction("p1", { action: "delete" })).toBeNull();
+  });
+  it("[CR-195] ảnh đã tải thì lần mở lại không gọi mạng; đăng xuất (xoá cache) ⇒ tải lại", async () => {
+    const urlApi = URL as unknown as { createObjectURL: (b: Blob) => string };
+    const realCreate = urlApi.createObjectURL;
+    urlApi.createObjectURL = () => "blob:giả";
+    try {
+      clearFileBlobs();
+      const calls = capture(200, {});
+      const api = createHttpApi();
+      await api.fileObjectUrl("fa");
+      await api.fileObjectUrl("fa");
+      expect(calls.map((c) => c.url)).toEqual(["/pack/community/files/fa"]);
+      clearFileBlobs();
+      await api.fileObjectUrl("fa");
+      expect(calls.length).toBe(2);
+    } finally {
+      urlApi.createObjectURL = realCreate;
+      clearFileBlobs();
+    }
   });
 });

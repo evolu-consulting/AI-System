@@ -2,6 +2,7 @@
 // token trong bộ nhớ, 401 ⇒ refresh cookie một lần). Hình dữ liệu = `@ai/contracts/community`; server quyết quyền xem.
 import type { FeedQuery } from "@ai/contracts/community";
 import { api, apiResponse } from "@ai/web-kit/http";
+import { cachedFileBlob } from "~/shared/kernel/file-blob-cache";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import type { CommunityApi, FlowsApi } from "../application/ports";
 import { PARTY_LIMIT } from "../domain/join-approve";
@@ -35,6 +36,9 @@ const decided = async <T>(p: Promise<T>): Promise<T> => {
   notifyFlowNavChanged();
   return r;
 };
+
+const fileBlob = async (fileId: string): Promise<Blob> =>
+  (await apiResponse(`${BASE}/files/${enc(fileId)}`)).blob();
 
 export const createHttpFlows = (): FlowsApi => ({
   nav: () => api(`${BASE}/flows/nav`),
@@ -95,7 +99,7 @@ export function createHttpApi(): CommunityApi {
         },
       }),
     downloadFile: async (fileId, name) => {
-      const blob = await (await apiResponse(`${BASE}/files/${enc(fileId)}`)).blob();
+      const blob = await cachedFileBlob(fileId, () => fileBlob(fileId));
       const href = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = href;
@@ -103,8 +107,9 @@ export function createHttpApi(): CommunityApi {
       a.click();
       setTimeout(() => URL.revokeObjectURL(href), 10_000);
     },
+    // CR-195: byte giữ theo phiên (trình duyệt còn cache HTTP 1 ngày); mỗi lần tạo URL mới vì bộ hiển thị thu hồi URL khi gỡ.
     fileObjectUrl: async (fileId) =>
-      URL.createObjectURL(await (await apiResponse(`${BASE}/files/${enc(fileId)}`)).blob()),
+      URL.createObjectURL(await cachedFileBlob(fileId, () => fileBlob(fileId))),
     createPost: (input) => api(`${BASE}/posts`, { method: "POST", body: input }),
     updatePost: (id, input) => api(`${BASE}/posts/${enc(id)}`, { method: "PATCH", body: input }),
     postAction: async (id, input) =>

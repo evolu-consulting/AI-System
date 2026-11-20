@@ -241,6 +241,26 @@ describe("GET /files/:id — chỉ người xem được bài (CR-118 §11.1, RL
   });
 });
 
+describe("GET /files/:id — cache trình duyệt (CR-195 BR-195-7)", () => {
+  it("[CR-195] 200 có private max-age 1 ngày, 404 (không quyền / id rác) không có max-age", async () => {
+    const ok = await download("hM", shared);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("cache-control")).toBe("private, max-age=86400");
+    expect(ok.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(ok.headers.get("content-security-policy")).toContain("sandbox");
+    const loose = await uploaded("hA", "rieng.pdf", PDF);
+    for (const res of [
+      await download("hM", loose.id), // người được giao, không phải người tạo; tệp chưa gắn bài ⇒ 404
+      await download("s1a", narrow),
+      await download("hB", shared),
+      await download("hA", "khong-phai-uuid"),
+    ]) {
+      expect(res.status).toBe(404);
+      expect(res.headers.get("cache-control") ?? "").not.toContain("max-age=86400");
+    }
+  });
+});
+
 describe("Gắn tệp × vòng dọn tệp — không cùng thắng (CR-118 cr118-r2-server)", () => {
   const NOW = new Date(Date.now() + 25 * 3_600_000); // mọi tệp tạo trong test đã "quá 24 h"
   const failing = new Set<string>();

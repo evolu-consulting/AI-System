@@ -3,6 +3,7 @@
 // (trùng app khác = tranh khoá / đăng xuất chéo). Phiên kết thúc → xoá cache Query (dữ liệu tenant cũ không lộ sang người sau).
 import { createSession } from "@ai/web-kit/auth/session";
 import { queryClient } from "~/app/query-client";
+import { clearFileBlobs } from "~/shared/kernel/file-blob-cache";
 
 /** CR-053 · `X-App` khi gọi `/auth/*`. `contracts` nằm trong `WEB_APPS` ⇒ admin-api dùng cookie phiên riêng `ai_rt_contracts`. */
 export const CONTRACTS_APP = "contracts";
@@ -13,5 +14,8 @@ export const session = createSession({
   app: CONTRACTS_APP,
   channelName: AUTH_CHANNEL_NAME,
   lockName: REFRESH_LOCK_NAME,
-  onEnd: () => queryClient.clear(),
+  onEnd: () => {
+    queryClient.clear();
+    clearFileBlobs(); // CR-195: byte tệp đã giữ của phiên cũ không sang người sau
+  },
 });
