@@ -16,7 +16,9 @@ export function PostMeta({ p, pill }: { p: PostView; pill?: ReactNode }) {
   return (
     <div className="meta">
       <span className="mline">
-        <span data-testid="post-company">{p.authorOrgName}</span>
+        <span className="org-t" data-testid="post-company">
+          {p.authorOrgName}
+        </span>
         <span
           className={`tag sm ${partner ? "soon" : "grey"}`}
           data-testid="post-source"
@@ -33,7 +35,7 @@ export function PostMeta({ p, pill }: { p: PostView; pill?: ReactNode }) {
             <span className="sep" aria-hidden="true" />
             <span className="scope" data-testid="post-scope">
               {scopeIsInternal(p) ? <IconLock size={12} /> : <IconUsers size={12} />}
-              {scope}
+              <span className="scope-t">{scope}</span>
             </span>
           </>
         )}

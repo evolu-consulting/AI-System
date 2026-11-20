@@ -10,14 +10,17 @@ test("đầu thẻ bài ≤ 3 dòng, một nút «⋯», không «·» đầu/cu
   const post = page.getByTestId("post").first();
   const head = post.locator(".ph");
   await expect(head).toBeVisible();
-  const lineH = await head.locator(".who").evaluate((el) => {
-    const px = Number.parseFloat(getComputedStyle(el).lineHeight);
-    return Number.isNaN(px) ? 20 : px;
+  // đếm số hàng chữ: top của các phần tử con trực tiếp của dòng tên + 2 dòng meta (cách ≥ 8px = hàng khác)
+  const rows = await head.locator(".who").evaluate((who) => {
+    const tops: number[] = [];
+    for (const el of who.querySelectorAll(".nm > *, .mline > *")) {
+      const r = el.getBoundingClientRect();
+      if (r.height > 0) tops.push(r.top + r.height / 2);
+    }
+    tops.sort((x, y) => x - y);
+    return tops.filter((t, i) => i === 0 || t - (tops[i - 1] ?? 0) >= 8).length;
   });
-  const box = await head.locator(".who").boundingBox();
-  expect(box?.height ?? 999).toBeLessThanOrEqual(
-    lineH * 3 + 24 /* chip 24px cao hơn dòng chữ */ + 8,
-  );
+  expect(rows).toBeLessThanOrEqual(3);
   await expect(post.getByTestId("post-more")).toHaveCount(1);
   await expect(post.locator(".iconact")).toHaveCount(0);
   const more = post.getByTestId("post-more");
@@ -38,7 +41,7 @@ test("phạm vi: bài «Tất cả đối tác» dùng biểu tượng người/
 
 test("tệp .txt trong bài có nút «Xem», mở ra thấy chữ, tên tệp dài giữ đuôi", async ({ page }) => {
   await page.goto("/community");
-  const composer = await openComposer(page, "Ghi chú");
+  const composer = await openComposer(page);
   await page.getByTestId("attach-input").setInputFiles({
     name: "pha-dao-ki-nang-giao-tiep-voi-khach-hang-quan-trong.txt",
     mimeType: "text/plain",

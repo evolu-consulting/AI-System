@@ -716,6 +716,24 @@
     gap: 5px;
     min-width: 0;
   }
+  /* mỗi dòng đúng một hàng: chữ dài cắt «…», nhãn/nút không co */
+  [data-mod="community"] .post .ph .meta .mline {
+    flex-wrap: nowrap;
+  }
+  [data-mod="community"] .post .ph .meta .mline > * {
+    flex: none;
+  }
+  [data-mod="community"] .post .ph .meta .org-t,
+  [data-mod="community"] .post .ph .meta .scope {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  [data-mod="community"] .post .ph .meta .org-t,
+  [data-mod="community"] .post .ph .meta .scope-t {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   /* «·» đầu dòng 3 (giữa công ty và thời gian) chỉ có trên máy tính */
   [data-mod="community"] .post .ph .sep.wide {
     display: none;
