@@ -173,7 +173,10 @@ test("CR193 · máy tính: nút Lọc nổi góc phải dưới, ô đăng bài 
   expect(f && f.x + f.width).toBeGreaterThan(1440 - 80); // sát mép phải
   expect(f && f.y + f.height).toBeGreaterThan(900 - 160); // sát đáy
   const before = await page.getByTestId("composer").boundingBox();
-  await page.mouse.wheel(0, 600);
+  // vùng cuộn là <main data-scroll-restoration-id="main-scroll"> của shell, không phải window (wheel ở (0,0) nằm trên thanh bên)
+  await page
+    .locator('[data-scroll-restoration-id="main-scroll"]')
+    .evaluate((el) => el.scrollTo({ top: 600 }));
   await expect
     .poll(async () => (await page.getByTestId("composer").boundingBox())?.y)
     .toBeLessThan((before?.y ?? 0) - 100); // ô đăng bài cuộn đi, không dính

@@ -575,6 +575,10 @@
   font-size: 12px;
   display: inline-grid;
   place-items: center;
+  /* CR-193: huy hiệu số nổi ở góc nút ⇒ bật/tắt lọc không đổi bề rộng nút (nút neo phải không bị xê dịch). */
+  position: absolute;
+  top: -6px;
+  right: -6px;
 }
 [data-mod="community"] .filterfab {
   position: fixed;
