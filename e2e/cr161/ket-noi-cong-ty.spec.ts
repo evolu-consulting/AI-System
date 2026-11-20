@@ -228,6 +228,7 @@ test("CR161-J7 · Tiên ngắt kết nối ⇒ chip NitiGroup biến mất ở T
 }) => {
   const a = await open(browser, EA, WHO.tien);
   await a.page.goto("/contracts/partners");
+  await openConnected(a.page);
   await a.page.getByRole("button", { name: `Ngắt kết nối với ${CO.b.name}` }).click();
   await a.page
     .getByRole("dialog", { name: `Ngắt kết nối với ${CO.b.name}?` })

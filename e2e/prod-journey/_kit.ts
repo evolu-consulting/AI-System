@@ -408,7 +408,7 @@ export async function ensureConnected(from: Page, a: Side, to: Page, b: Side): P
       .getByRole("button", { name: "Gửi lời mời", exact: true })
       .click();
     await to.goto(`${E.cw}/contracts/partners`);
-    const band = to.getByTestId("connect-invite").filter({ hasText: CO[a].name });
+    const band = to.getByTestId("connect-request").filter({ hasText: CO[a].name });
     await reloadUntil(to, async () => expect(band).toBeVisible({ timeout: 4_000 }));
     await band.getByRole("button", { name: "Đồng ý", exact: true }).click();
     await expect(to.getByTestId("connected-list")).toContainText(CO[a].name);

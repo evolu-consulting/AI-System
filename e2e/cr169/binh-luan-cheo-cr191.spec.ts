@@ -128,6 +128,7 @@ test("CR191-C3 · Tiên ngắt kết nối ⇒ Hà không còn thấy bài NitiG
 }) => {
   const a = await open(browser, EA, WHO.tien);
   await a.page.goto("/contracts/partners");
+  await a.page.getByTestId("connected-toggle").click(); // CR-193: «Ngắt kết nối» nằm trong danh sách «Đang kết nối»
   await a.page.getByRole("button", { name: `Ngắt kết nối với ${CO.b.name}` }).click();
   await a.page
     .getByRole("dialog", { name: `Ngắt kết nối với ${CO.b.name}?` })

@@ -116,7 +116,7 @@ test("FL3-4 · Công ty MỘT người (Preschool) gửi: Chuẩn bị ký ⇒ K
     .getByRole("button", { name: "Gửi lời mời", exact: true })
     .click();
   await tien.goto(`${EN.cw}/contracts/partners`);
-  const band = tien.getByTestId("connect-invite").filter({ hasText: CO.p.name });
+  const band = tien.getByTestId("connect-request").filter({ hasText: CO.p.name });
   await reloadUntil(tien, async () => expect(band).toBeVisible({ timeout: 4_000 }));
   await band.getByRole("button", { name: "Đồng ý", exact: true }).click();
   await expect(tien.getByTestId("connected-list")).toContainText(CO.p.name);

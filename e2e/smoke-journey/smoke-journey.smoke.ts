@@ -396,7 +396,7 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         .click();
       const b = await as("b", "gd");
       await b.goto(`${E.cw}/contracts/partners`);
-      const band = b.getByTestId("connect-invite").filter({ hasText: NAME.a });
+      const band = b.getByTestId("connect-request").filter({ hasText: NAME.a });
       await reloadUntil(b, async () => expect(band).toBeVisible({ timeout: 4_000 }));
       await band.getByRole("button", { name: "Đồng ý", exact: true }).click();
       await expect(b.getByTestId("connected-list")).toContainText(NAME.a);

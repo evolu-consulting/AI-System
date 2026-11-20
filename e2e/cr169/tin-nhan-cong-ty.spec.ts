@@ -359,6 +359,7 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
   ]);
   await expect(a.page.getByRole("button", { name: "Thao tác", exact: true })).toHaveCount(0);
   await a.page.goto("/contracts/partners");
+  await a.page.getByTestId("connected-toggle").click(); // CR-193: «Ngắt kết nối» nằm trong danh sách «Đang kết nối»
   await a.page.getByRole("button", { name: `Ngắt kết nối với ${CO.b.name}` }).click();
   await a.page
     .getByRole("dialog", { name: `Ngắt kết nối với ${CO.b.name}?` })
