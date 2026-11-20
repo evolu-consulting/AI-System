@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { FAILED_ID, installHub } from "./_hub";
-import { contract } from "./dataset-contract";
+import { contract, contractAsHub } from "./dataset-contract";
 import { ACTIVE_ID } from "./dataset-v2f";
 
 const CAPTURE = process.env.CW_MODE === "capture";
@@ -32,6 +32,8 @@ type Scene = {
   mask: string[];
   ready: (page: Page) => Locator;
   act?: (page: Page) => Promise<void>;
+  /** Chạy sau installHub, trước goto (ghi đè route). */
+  setup?: (page: Page) => Promise<void>;
 };
 
 const D = { width: 1440, height: 900 };
@@ -73,6 +75,55 @@ const newBoxes = {
   upload: 'main [data-testid="attach-dropzone"]',
 };
 const mainReady = (p: Page) => p.locator("main h1");
+// CR-193: HĐ nhập tay (khung tệp cạnh form) — bắt lệch đầu trang/lưới. Nội dung tệp che (không có tệp thật).
+const manualSetup = async (p: Page) =>
+  p.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
+    r.request().method() === "GET"
+      ? r.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            ...contractAsHub("needs_review"),
+            entry_source: "manual",
+            reconciled_by: null,
+            reconciled_at: null,
+            has_source: false,
+            file: { name: "hop-dong.pdf", mime: "application/pdf" },
+          }),
+        })
+      : r.fallback(),
+  );
+const MANUAL_SCENES: Scene[] = [
+  {
+    name: "cr193-manual-light",
+    signedIn: true,
+    path: `/contracts/c/${contract.id}`,
+    size: D,
+    theme: "light",
+    text: ["main"],
+    boxes: {
+      head: '[data-testid="form-bar"]',
+      side: '[data-testid="manual-side"]',
+      heading: "main h1",
+    },
+    mask: ['[data-testid="manual-side"]'],
+    ready: (p) => p.locator("main h1"),
+    setup: manualSetup,
+  },
+  {
+    name: "cr193-manual-mobile",
+    signedIn: true,
+    path: `/contracts/c/${contract.id}`,
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: { heading: "main h1" },
+    mask: [],
+    ready: (p) => p.locator("main h1"),
+    setup: manualSetup,
+  },
+];
+
 const HD2_SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
@@ -380,6 +431,7 @@ const SCENES: Scene[] = [
   ),
   ...OVERVIEW_SCENES,
   ...HD2_SCENES,
+  ...MANUAL_SCENES,
   ...HD5_SCENES,
   ...MSG_SCENES,
   ...V2F_SCENES,
@@ -410,6 +462,7 @@ async function prepare(page: Page, s: Scene) {
         body: JSON.stringify({ groups: [] }),
       }),
     );
+  await s.setup?.(page);
   await page.setViewportSize(s.size);
   await page.goto(s.path);
   await page.addStyleTag({ content: HIDE });

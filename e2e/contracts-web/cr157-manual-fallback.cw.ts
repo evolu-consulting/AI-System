@@ -170,9 +170,26 @@ test("CR-162 · màn nhập tay: form và tệp gốc 2 cột full chiều rộn
   const form = await page.getByTestId("manual-banner").boundingBox();
   expect(side && form && side.x > form.x).toBe(true);
   expect(side ? side.x + side.width : 0).toBeGreaterThan(1400 - 64); // chạm lề phải vùng nội dung, không chừa trống
-  expect(Math.abs((form?.width ?? 0) - 360)).toBeLessThan(80); // CR-193: cột thông tin ~360px, PDF chiếm phần còn lại
+  expect(Math.abs((form?.width ?? 0) - 460)).toBeLessThan(40); // CR-193: cột thông tin ~460px, PDF chiếm phần còn lại
   await page.setViewportSize({ width: 800, height: 900 });
   await expect(page.getByTestId("manual-side")).toBeHidden(); // hẹp ⇒ xếp dọc, dùng nút icon xem tệp
+});
+
+// CR-193 · đầu trang HĐ nhập tay thẳng mép với lưới (trái = cột form, phải = khung tệp), PDF đủ rộng ở 1920.
+test("CR-193 · nhập tay: đầu trang thẳng mép với lưới", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await installV2f(page, { contract: () => manual() });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const head = await page.getByTestId("form-bar").boundingBox();
+  const form = await page.getByTestId("manual-banner").boundingBox();
+  const side = await page.getByTestId("manual-side").boundingBox();
+  expect(head && form && side).toBeTruthy();
+  expect(Math.abs((head?.x ?? 0) - (form?.x ?? 99))).toBeLessThan(2);
+  expect(
+    Math.abs((head?.x ?? 0) + (head?.width ?? 0) - ((side?.x ?? 0) + (side?.width ?? 0))),
+  ).toBeLessThan(2);
+  expect(side?.width ?? 0).toBeGreaterThan(900); // BR-193-8: không bị chặn ~1100px
+  expect(form?.width ?? 0).toBeGreaterThan(420);
 });
 
 // CR-162 (2) thẻ «Không đọc được»: một cụm — Nhập tay chính + menu ⋯ (Thử lại · Tải tệp khác).

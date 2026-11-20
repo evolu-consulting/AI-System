@@ -422,7 +422,7 @@ b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
 c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
-d29ec6446d578833c8f8a2f4e42375d4368d92d15daa736e1468ba0356efea68  e2e/contracts-web/cr157-manual-fallback.cw.ts
+7c55d3c690785d8ecbef83ac023df24afb029cce0f2d0975ba176f6910de9821  e2e/contracts-web/cr157-manual-fallback.cw.ts
 4069eeaba8f6cb918b0b4cecd436bbaba40d9029ce3efc57ed605895b718a03f  e2e/contracts-web/cr158-tenant-favicon.cw.ts
 00c89f42a795b68180a4256fb17bb2e4f476cb47133694b19e24448b66226713  e2e/contracts-web/cr171-kinds.cw.ts
 af1e92acc993181bfa5c31c7d05801452256b3ea91e8b4a27e5b7ca0f87da998  e2e/contracts-web/cr173-attach-dropzone.cw.ts
@@ -481,7 +481,7 @@ b8fa4e6495c0cde739bb1db6edd833c21489625beda598b6da8a0e7687181acd  e2e/contracts-
 55b57ba282263d1631663697bca3be9c4bf657f91067afe6edcaa0ef234cf084  e2e/contracts-web/overview.cw.ts
 ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-web/playwright.config.ts
 13f6fa4f714f98de07d57420def78a25c595f48282694993eea6566ad64ca0cd  e2e/contracts-web/rep3-engine.cw.ts
-07decd44fa1b400a8d2c4998817c73bd28f158ee6ae206dfafbfa7af003f23ca  e2e/contracts-web/scenes.cw.ts
+40b3306bf3880de0bcc758752fafde3333f05e04d8e2a2734a2b603dce08514a  e2e/contracts-web/scenes.cw.ts
 354955194f113259146d6f4349ec4c1b9bc86ef1ca0fc3cc8d089dc7b5f7f755  e2e/contracts-web/signature-mock.ts
 f98097862bd93e4561d1065fc0f24f344f41abd306e87ab9d26a8144a40dca04  e2e/contracts-web/transactions.cw.ts
 61f0905bb8612e46c29a6caf4431f49eda77f202ab22894cba915662fcdc5c09  e2e/contracts-web/ui-gating.cw.ts

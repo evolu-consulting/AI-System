@@ -233,13 +233,21 @@ export function HeadActions({
       )}
       {primaryWhy &&
         !rule.submitBlocked && ( // «chưa có quy trình»: dòng lý do NF1 của trang đã nói
-          <span role="status" className="text-sm text-late" data-testid="submit-why">
+          <span
+            role="status"
+            className="order-last w-full text-right text-sm text-late"
+            data-testid="submit-why"
+          >
             {primaryWhy}
           </span>
         )}
       <ContractActionsMenu id={id} canDelete={canDelete} items={items} busy={off} />
       {err && !ask && (
-        <span role="alert" className="text-sm text-late" data-testid="act-error">
+        <span
+          role="alert"
+          className="order-last w-full text-right text-sm text-late"
+          data-testid="act-error"
+        >
           {err}
         </span>
       )}

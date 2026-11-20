@@ -183,6 +183,7 @@ export function ContractBody(p: {
   const reading = c.extract_state === "reading" && c.status === "draft" && c.submit_round === 0;
   const head = (
     <ContractHead
+      flush={manualSide}
       c={c}
       signed={session ? allSigned(session) : false}
       title={c.title}
@@ -210,10 +211,10 @@ export function ContractBody(p: {
     />
   );
   return (
-    <div className="w-full">
-      {manualSide && <div className="mb-4">{head}</div>}
+    <div className={manualSide ? "w-full" : "mx-auto w-full max-w-[1100px]"}>
+      {manualSide && head}
       <div
-        className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[360px_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
+        className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[460px_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
       >
         <div className="min-w-0 flex-1 max-lg:w-full">
           <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">

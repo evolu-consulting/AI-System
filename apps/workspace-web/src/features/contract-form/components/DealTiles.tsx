@@ -30,7 +30,7 @@ export function DealTiles({
   // CR-153: 5 loại luôn hiện (Thêm giao dịch, xác nhận sau AI, chi tiết HĐ mọi trạng thái).
   const deals = ALL_DEALS;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="@container flex flex-col gap-1.5">
       <span id="deal-label" className="text-[13px]">
         {L("deal")}
       </span>
@@ -39,7 +39,7 @@ export function DealTiles({
         aria-labelledby="deal-label"
         data-unsure={unsure || undefined}
         className={cn(
-          "grid grid-cols-3 gap-2.5 max-sm:grid-cols-2",
+          "grid grid-cols-2 gap-2.5 @[34rem]:grid-cols-3",
           unsure && "rounded-xl border border-soon-line bg-soon-bg p-1.5",
         )}
       >

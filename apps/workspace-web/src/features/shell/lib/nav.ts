@@ -122,10 +122,12 @@ export const isFullscreen = (
 ): boolean => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /** Bố cục vùng nội dung: danh sách đầy cột (`board`, rộng 1600 px, tự giữ cuộn từ md), Tổng quan (`wide`), còn lại `reading`. */
-export type PageLayout = "board" | "wide" | "reading";
+export type PageLayout = "board" | "wide" | "reading" | "detail";
 export function layoutOf(pathname: string): PageLayout {
   if (pathname === B || pathname === `${B}/messages`) return "wide";
   // CR-120: Community (Bảng tin 3 cột / Hồ sơ) trong cùng khung ⇒ khoang rộng như Tổng quan.
   if (pathname === "/community" || pathname.startsWith("/community/")) return "wide";
+  // CR-193: chi tiết hợp đồng `/contracts/c/<id>` (trừ `new`) dùng khoang rộng; thân tự giới hạn khi không có khung PDF cạnh bên.
+  if (/^\/contracts\/c\/[^/]+$/.test(pathname) && pathname !== `${B}/c/new`) return "detail";
   return [`${B}/list`, `${B}/partners`, `${B}/products`].includes(pathname) ? "board" : "reading";
 }

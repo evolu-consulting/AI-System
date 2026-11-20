@@ -26,6 +26,8 @@ type Props = {
   actions: ReactNode;
   /** CR-182: mọi tệp cần ký đã ký đủ (cả Bên B) ⇒ nhãn «Đã ký». */
   signed?: boolean;
+  /** CR-193: đầu trang đứng ngoài lưới (màn nhập tay) ⇒ thẳng mép với lưới. */
+  flush?: boolean;
 };
 
 function Titled({
@@ -67,7 +69,15 @@ export function ContractHead(p: Props) {
   const title = <Titled c={p.c} title={p.title} rename={p.rename} signed={p.signed} />;
   if (p.sticky)
     return (
-      <FormBar accent crumb={crumb} title={title} lead={p.lead} cancel={null} save={p.actions} />
+      <FormBar
+        accent
+        flush={p.flush === true}
+        crumb={crumb}
+        title={title}
+        lead={p.lead}
+        cancel={null}
+        save={p.actions}
+      />
     );
   return (
     <FormBar

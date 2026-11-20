@@ -22,7 +22,7 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import type { ShellUser } from "../components/UserMenu";
 import { useDock } from "../hooks/use-dock";
-import { fabHiddenOn, isFullscreen, layoutOf, roleOf } from "../lib/nav";
+import { fabHiddenOn, isFullscreen, layoutOf, type PageLayout, roleOf } from "../lib/nav";
 import { NAV_PINNED_KEY, useStoredBool } from "../lib/stored";
 
 type T = (k: string, o?: Record<string, unknown>) => string;
@@ -52,6 +52,14 @@ const fabClass = (o: {
     o.onCard && "max-md:hidden",
     fabHiddenOn(o.pathname) && "hidden",
   );
+
+/** Khoang nội dung theo bố cục trang (`layoutOf`). */
+const LAYOUT_CLASS: Record<PageLayout, (dockOpen: boolean) => string> = {
+  board: () => "max-w-[1600px] md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
+  wide: () => "max-w-[1560px]",
+  detail: () => "max-w-[1680px]",
+  reading: (open) => (open ? "max-w-[900px]" : "max-w-[1100px]"),
+};
 
 export function Shell({ user, write, owner }: { user: ShellUser; write: boolean; owner: boolean }) {
   const { t } = useTranslation();
@@ -95,10 +103,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
               className={cn(
                 "mx-auto w-full",
                 fullscreen && "flex h-full min-h-0 flex-col",
-                layout === "board" &&
-                  "max-w-[1600px] md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
-                layout === "wide" && "max-w-[1560px]",
-                layout === "reading" && (dock.open ? "max-w-[900px]" : "max-w-[1100px]"),
+                LAYOUT_CLASS[layout](dock.open),
               )}
             >
               <Outlet />
