@@ -193,7 +193,7 @@ a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 6201d2a08cfacbfbe79b440a10cc1f7222de48ab7597d52a89d32520961fe7b3  e2e/community-web/cr129-media.cm.ts
 27fc9e01f5a6f756e1751aa84ff1420a3121d9a8a55bddbe5d3b1caab5ad8b9a  e2e/community-web/cr129-mention.cs.ts
-d5cc4f282586bf0bd5abaf7431c49610fcb123569f7af42120af95c9090be855  e2e/community-web/cr130-journey.cs.ts
+da4d62db74313d8fe2a3f1094b8a5f1cf29eb4380160611d1cd7e0fbd7783dc4  e2e/community-web/cr130-journey.cs.ts
 617537b4161e6a6d7f6c34919de856c625e3d593d926d615a987f2c7eb523f31  e2e/community-web/cr145-post-mention.cs.ts
 751517b3c3e6c52274ca76515f4237c11f7d733ec310778c0038230aa3ab7ed8  e2e/community-web/cr147-feed.cm.ts
 11e5c0c8c37e078ca2e72c6b1034bd93587e3b023267e0ce1a01885e838684b6  e2e/community-web/cr147b-people.cs.ts
@@ -421,7 +421,7 @@ b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
 c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
-d8cb0334a8eb0dc6f5634a902a9b06670d65b57abd64973383fdc99e34051410  e2e/contracts-web/cr157-manual-fallback.cw.ts
+d29ec6446d578833c8f8a2f4e42375d4368d92d15daa736e1468ba0356efea68  e2e/contracts-web/cr157-manual-fallback.cw.ts
 4069eeaba8f6cb918b0b4cecd436bbaba40d9029ce3efc57ed605895b718a03f  e2e/contracts-web/cr158-tenant-favicon.cw.ts
 00c89f42a795b68180a4256fb17bb2e4f476cb47133694b19e24448b66226713  e2e/contracts-web/cr171-kinds.cw.ts
 af1e92acc993181bfa5c31c7d05801452256b3ea91e8b4a27e5b7ca0f87da998  e2e/contracts-web/cr173-attach-dropzone.cw.ts
@@ -437,6 +437,7 @@ aa5ab30af9c32c2e0765120220a8d4baaacd36ef0211df77a79939e0cd6d5ab7  e2e/contracts-
 d13d5e553180ba1b68804dc24eb5f8912a64ea4e302a840d0866034cf7db0ed7  e2e/contracts-web/cr188-verify.cw.ts
 e8af07a5543cb008f0ec62224455e5e1db954e3b188c31a1465fa1c410f8ae7b  e2e/contracts-web/cr189-avatar-list.cw.ts
 ecbf934144efd4faabba6c0b97b0d65d1f23bd2c7bc7c6723f97032069a90074  e2e/contracts-web/cr191-search-mobile.cw.ts
+e7f6e55c0714ce8a382881e2f4c1027a59b2e94ca34e3ed9c9896a6b48c989f1  e2e/contracts-web/cr193-pending.cw.ts
 4812e84db9773c59326b51c0fc33370cbb022e52779aef83674af65f52fdb757  e2e/contracts-web/cr193-scroll.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
@@ -528,11 +529,11 @@ b6a769ff2368a4935df4b43b37aec0a3a49428d196a405f411bb83d8f546ef23  e2e/cr127/j18-
 089b17c879399e94195134ba93e5baa40e9142fa01feed77b0179dba74588013  e2e/cr149/file-preview.spec.ts
 353db2bc9a5f46c18eaccb94a1d37f79ba49a3ed998d2cdc468e7dd41bc91a3c  e2e/cr152/kinds-ui.spec.ts
 363b492cde8982cf226da3800c469d06654da68813fd437f62663bc689f257a8  e2e/cr161/_cr161-stack.ts
-e0da500d7dc5351731421eed86e1079b43b8d9c96f58518c300a2d7355665ee3  e2e/cr161/ket-noi-cong-ty.spec.ts
+fcbe2c59da2cd7e5052ab288ecb525101b9d7a3bb692299b358cb62050c15c41  e2e/cr161/ket-noi-cong-ty.spec.ts
 2247df12ef35c5679797557ce21b085ad59726db9beb552323c4714227f133b9  e2e/cr161/playwright.cr161.config.ts
 f87c94d84095fd668ee136a863b1068fb44e848d6afb305669286710130b3093  e2e/cr169/binh-luan-cheo-cr191.spec.ts
 f1daaf3696f87cd2e6b6b21358d2c505aa3582c52e3bdb8db076d6cd951977ce  e2e/cr169/playwright.cr169.config.ts
-6169c1cc72119806e1f15f90630607131a3d619af837e65410206e3bcba84445  e2e/cr169/tin-nhan-cong-ty.spec.ts
+ab7903eac263cdbd267795773fc57575904bcdec9ff6140857c4ee32d02f8b37  e2e/cr169/tin-nhan-cong-ty.spec.ts
 6b1684444ff650292003dc5253debd13d1cbd13c4a3c578d80a5e94284e17ba3  e2e/cr179/khung-tep-co-dinh.spec.ts
 8389dcdb230797d2d2fd8c5d59a151d4711d90d45138a1d48eebb1a6b54b6c5b  e2e/cr179/tin-nhan-anh.spec.ts
 8708d10dc3eec21909733b1f303e9e8b7cdf7c1e8745089121ba572dc4b11a94  e2e/cr181/_cr181-kit.ts

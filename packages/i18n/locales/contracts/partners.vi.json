@@ -223,6 +223,12 @@
       "message": "Nhắn tin",
       "openPartner": "Mở trang đối tác",
       "hub": {
+        "pendingTitle": "Yêu cầu chờ duyệt",
+        "kindConnect": "Muốn kết nối",
+        "more": "Xem thêm {{n}} yêu cầu",
+        "less": "Thu gọn",
+        "sentSub": "Lời mời mình đã gửi, đang chờ họ trả lời",
+        "connectedBtn": "Đang kết nối {{n}} công ty",
         "requestsTitle": "Yêu cầu kết nối",
         "requestsEmpty": "Chưa có yêu cầu kết nối nào.",
         "sentTitle": "Lời mời đã gửi",

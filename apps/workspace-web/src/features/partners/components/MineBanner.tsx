@@ -29,12 +29,9 @@ export function MineBanner() {
             unknown: m.by_fault.unknown,
           });
   return (
-    <section
-      aria-label={L("title")}
-      className="mb-4 rounded-xl border border-rule bg-panel px-5 py-3 text-[13.5px] max-sm:px-4"
-    >
+    <section aria-label={L("title")} className="mb-3 -mt-2 text-xs text-dim">
       <div className={open ? undefined : "max-sm:line-clamp-2"}>
-        <b>{L("title")}:</b> {detail}
+        {detail}
         {m.blamed.length > 0 && (
           <span>
             {" "}
@@ -45,7 +42,7 @@ export function MineBanner() {
       <Button
         variant="ghost"
         size="sm"
-        className="hidden px-0 font-semibold text-act max-sm:inline-flex"
+        className="hidden px-0 text-xs font-semibold text-act max-sm:inline-flex"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >

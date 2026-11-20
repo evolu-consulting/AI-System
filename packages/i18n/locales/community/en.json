@@ -590,6 +590,8 @@
       },
       "join": {
         "title": "Join requests",
+        "kind": "Asks to join the feed",
+        "accept": "Let them join",
         "introPartner": "Send a request so your company is linked with the community. An admin will review and answer; each company can have one pending request.",
         "formTitle": "Company details",
         "company": "Company name",

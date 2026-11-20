@@ -590,6 +590,8 @@
       },
       "join": {
         "title": "Yêu cầu tham gia",
+        "kind": "Xin vào Bảng tin",
+        "accept": "Cho tham gia",
         "introPartner": "Gửi yêu cầu để công ty bạn được liên kết với cộng đồng. Quản trị sẽ xem và trả lời; mỗi công ty có một yêu cầu đang chờ.",
         "formTitle": "Thông tin công ty",
         "company": "Tên công ty",

@@ -347,6 +347,7 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
 }) => {
   const a = await open(browser, EA, WHO.tien);
   await a.page.goto("/contracts/partners");
+  await a.page.getByTestId("connected-toggle").click(); // CR-193: mở danh sách trong thẻ «Đang kết nối»
   await a.page
     .getByTestId("connected-list")
     .getByRole("link", { name: "Mở trang đối tác" })

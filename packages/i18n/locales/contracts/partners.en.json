@@ -223,6 +223,12 @@
       "message": "Message",
       "openPartner": "Open partner page",
       "hub": {
+        "pendingTitle": "Pending requests",
+        "kindConnect": "Wants to connect",
+        "more": "Show {{n}} more requests",
+        "less": "Show less",
+        "sentSub": "Invitations you sent, waiting for their answer",
+        "connectedBtn": "Connected with {{n}} companies",
         "requestsTitle": "Connection requests",
         "requestsEmpty": "No connection requests.",
         "sentTitle": "Invitations sent",

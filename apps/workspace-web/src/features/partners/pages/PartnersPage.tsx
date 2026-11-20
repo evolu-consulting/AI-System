@@ -17,12 +17,10 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager, TableTools } from "~/features/table";
 import { cn } from "~/lib/utils";
 import { AddCompanyDialog } from "../components/AddCompanyDialog";
-import { ConnectedPanel } from "../components/ConnectedPanel";
-import { ConnectRequestsPanel } from "../components/ConnectRequestsPanel";
 import { ConnectSearchDialog } from "../components/ConnectSearchDialog";
 import { DiscoverableCard } from "../components/DiscoverableCard";
-import { JoinRequestsPanel } from "../components/JoinRequestsPanel";
 import { MineBanner } from "../components/MineBanner";
+import { PendingRequestsCard } from "../components/PendingRequestsCard";
 import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
 import { usePartyPage } from "../hooks/use-partner-scores";
@@ -153,7 +151,7 @@ export function PartnersPage() {
         </Empty>
       );
     return (
-      <ul data-testid="partner-list" className="md:min-h-0 md:flex-1 md:overflow-auto">
+      <ul data-testid="partner-list">
         {items.map((p) => (
           <Row
             key={p.party}
@@ -166,7 +164,7 @@ export function PartnersPage() {
     );
   };
   return (
-    <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
+    <div className="text-base leading-[1.55]">
       <PageHeader
         className="mb-5"
         title={L("title")}
@@ -189,11 +187,9 @@ export function PartnersPage() {
       />
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
       {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}
-      <ConnectRequestsPanel />
-      <JoinRequestsPanel />
-      <DiscoverableCard />
-      <ConnectedPanel />
       <MineBanner />
+      <PendingRequestsCard />
+      <DiscoverableCard />
       <TableTools q={qRaw} setQ={setQRaw} total={total} placeholder={L("search")}>
         <FilterBar
           className="min-w-0 max-sm:w-full"
@@ -220,7 +216,7 @@ export function PartnersPage() {
           }
         />
       </TableTools>
-      <Panel className="md:flex md:min-h-0 md:flex-1 md:flex-col">
+      <Panel>
         {body()}
         <Pager t={pager} />
       </Panel>

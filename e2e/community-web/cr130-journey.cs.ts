@@ -210,7 +210,11 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
     const item = host.page.getByTestId("join-list-detail"); // CR-137b: bấm dòng ⇒ hộp thoại chi tiết
     await expect(async () => {
       await host.page.goto("/contracts/partners"); // CR-191: «Yêu cầu tham gia» nay ở Sổ Hợp Tác › Đối tác
-      await row.click({ timeout: 4_000 });
+      // CR-193: thẻ «Yêu cầu chờ duyệt» chỉ hiện 3 dòng đầu ⇒ mở rộng nếu có «Xem thêm»; «Cho tham gia» mở hộp chi tiết
+      const more = host.page.getByTestId("pending-more");
+      if ((await more.count()) && (await more.getAttribute("aria-expanded")) !== "true")
+        await more.click();
+      await row.getByRole("button", { name: "Cho tham gia" }).click({ timeout: 4_000 });
       await expect(item.getByTestId("join-approve")).toBeVisible({ timeout: 4_000 });
     }).toPass({ timeout: 240_000 }); // bước duyệt mở sau bước kiểm tra của hệ thống
     return item;
@@ -266,7 +270,7 @@ test("CR191-J8 · người duyệt mở link cũ /community/join ⇒ chuyển sa
   const p = host.page;
   await p.goto("/community/join");
   await expect(p).toHaveURL(/\/contracts\/partners/);
-  await expect(p.getByTestId("join-requests-panel")).toBeVisible();
+  await expect(p.getByTestId("join-requests-panel")).toBeAttached(); // CR-193: không có yêu cầu ⇒ thẻ ẩn, phần Community vẫn gắn
   await p.goto("/community");
   await expect(p.getByTestId("nav-community-join")).toHaveCount(0); // người duyệt không thấy; đối tác vẫn thấy (lối vào form)
   await host.ctx.close();

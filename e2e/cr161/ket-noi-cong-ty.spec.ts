@@ -26,6 +26,12 @@ const [EA, EB] = [envOf("a"), envOf("b")];
 const RUN = need("CR161_RUN");
 const NOTE = `Mong hai bên hợp tác ${RUN}`;
 
+/** CR-193 · BR-193-10: danh sách «Đã kết nối» + cài đặt nằm trong thẻ một dòng, mở bằng nút «Đang kết nối N công ty». */
+const openConnected = async (page: Page) => {
+  const b = page.getByTestId("connected-toggle");
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+};
+
 const open = async (browser: Browser, e: Env, user: string) => {
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
@@ -96,6 +102,7 @@ test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», bấm «Nhắn ti
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.tien);
   await page.goto("/contracts/partners");
+  await openConnected(page);
   const list = page.getByTestId("connected-list");
   await expect(list).toContainText(CO.b.name);
   await expect(list).toContainText("Đã kết nối");
@@ -111,6 +118,7 @@ test("CR161-J3b · Tiên mở trang đối tác của công ty đã kết nối:
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.tien);
   await page.goto("/contracts/partners");
+  await openConnected(page);
   await page.getByTestId("connected-list").getByRole("link", { name: "Mở trang đối tác" }).click();
   await expect(page.getByRole("tablist", { name: "Thông tin đối tác" })).toBeVisible();
   await expect(page.getByRole("tab")).toHaveText([
@@ -143,6 +151,7 @@ test("CR161-J6 · CR-191: Vy (nhân viên NitiGroup) xem được đối tác đ
   await page.goto("/contracts/partners");
   await expect(page.getByTestId("connected-list")).toContainText(CO.b.name);
   await expect(page.getByRole("button", { name: "Ngắt kết nối" })).toHaveCount(0);
+  await openConnected(page);
   const setting = page.getByTestId("connect-setting");
   await expect(setting).toContainText("Ai được tìm và mời đối tác mới");
   await expect(page.getByTestId("connect-locked-why")).toContainText(
@@ -192,6 +201,7 @@ test("CR191-J1 · Tiên (quản trị) đổi «Ai được tìm và mời đố
 }) => {
   const tien = await open(browser, EA, WHO.tien);
   await tien.page.goto("/contracts/partners");
+  await openConnected(tien.page);
   await tien.page.getByTestId("connect-setting-all").click();
   await expect(tien.page.getByTestId("connect-setting-all")).toHaveAttribute(
     "aria-pressed",
