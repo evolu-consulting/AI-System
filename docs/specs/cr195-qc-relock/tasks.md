@@ -10,4 +10,5 @@
 - Không đụng cr190/danh-sach-trai.spec.ts và cr130-journey.cs.ts (ngoài phạm vi).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: chỉ sửa test khoá theo thiết kế CR-195, FileBox giả gửi CORS, chụp lại baseline).
