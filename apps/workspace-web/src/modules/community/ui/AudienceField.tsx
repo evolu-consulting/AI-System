@@ -7,19 +7,17 @@ import type {
   PostAudience,
   PostType,
 } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import { audienceCounts, audienceError } from "../domain/audience";
 import { t } from "../i18n";
-import { CompanyPicker } from "./CompanyPicker";
+import { CompanyPickDialog } from "./CompanyPickDialog";
 
 const CHOICES = ["all", "internal", "suppliers", "buyers", "companies"] as const;
 
 export const ALL_AUDIENCE: PostAudience = { mode: "all", cats: [], companies: [], tenants: [] };
-
-const toggle = (list: string[], v: string) =>
-  list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
 export function AudienceField({
   value,
@@ -43,6 +41,19 @@ export function AudienceField({
   useEffect(() => {
     api.audienceConnected(value.mode, value.tenants).then(setConnected, () => setConnected([]));
   }, [api, value.mode, tenantKey]);
+  const [pick, setPick] = useState(false);
+  const names = [
+    ...connected.filter((c) => value.tenants.includes(c.tenantId)).map((c) => c.name),
+    ...partners.filter((p) => value.companies.includes(p.id)).map((p) => p.name),
+  ];
+  const total = value.tenants.length + value.companies.length;
+  const summary =
+    total === 0
+      ? t("community.audience.sumNone")
+      : t("community.audience.sumSome", {
+          n: total,
+          names: names.slice(0, 2).join(", ") + (total > 2 ? "…" : ""),
+        });
   const { n, N } = audienceCounts(value, { type, cats }, partners, connected);
   const err = audienceError(value);
   return (
@@ -55,9 +66,10 @@ export function AudienceField({
         aria-label={t("community.audience.field")}
         data-testid="audience-select"
         value={value.mode}
-        onValueChange={(m) =>
-          onChange({ ...value, mode: m as PostAudience["mode"], tenants: [], companies: [] })
-        }
+        onValueChange={(m) => {
+          onChange({ ...value, mode: m as PostAudience["mode"], tenants: [], companies: [] });
+          if (m === "companies") setPick(true);
+        }}
       >
         {CHOICES.map((m) => (
           <option key={m} value={m}>
@@ -66,33 +78,25 @@ export function AudienceField({
         ))}
       </OptionSelect>
       {value.mode === "companies" && (
-        <div className="companypick" data-testid="audience-companies">
-          {connected.length > 0 && (
-            <>
-              <div className="fhint">{t("community.audience.connectedTitle")}</div>
-              <div className="chips">
-                {connected.map((c) => (
-                  <button
-                    key={c.tenantId}
-                    type="button"
-                    className={value.tenants.includes(c.tenantId) ? "chip on" : "chip"}
-                    aria-pressed={value.tenants.includes(c.tenantId)}
-                    onClick={() =>
-                      onChange({ ...value, tenants: toggle(value.tenants, c.tenantId) })
-                    }
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          <CompanyPicker
-            selected={value.companies}
-            onToggle={(id) => onChange({ ...value, companies: toggle(value.companies, id) })}
-          />
+        <div className="audsum" data-testid="audience-companies-summary">
+          <span>{summary}</span>
+          <Button
+            variant="quiet"
+            size="sm"
+            data-testid="audience-edit"
+            onClick={() => setPick(true)}
+          >
+            {t("community.audience.edit")}
+          </Button>
         </div>
       )}
+      <CompanyPickDialog
+        open={pick}
+        onOpenChange={setPick}
+        value={value}
+        connected={connected}
+        onChange={onChange}
+      />
       <div className="audprev" data-testid="audience-preview" role="status">
         {err ?? t("community.audience.count", { n, N })}
       </div>

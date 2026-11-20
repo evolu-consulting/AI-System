@@ -133,3 +133,41 @@
     padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
   }
 }
+
+/* CR-195 BR-195-8 · hộp chọn công ty: hàng có ô chọn; ngoài form chỉ tóm tắt + «Sửa». */
+[data-mod="community"] .audsum,
+.companyrows {
+  display: flex;
+}
+[data-mod="community"] .audsum {
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.companyrows {
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.companyrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* CR-195 BR-195-9 · điện thoại: hàng loại bài canh trái, không cắt chip đầu, KHÔNG giãn dọc (flex:1 1 100% của CR-186 làm phình thành khoảng trống); ô viết ngay dưới và giãn. */
+@media (max-width: 640px) {
+  .composedlg[data-mod="community"] .feedcomposer .seg {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+}

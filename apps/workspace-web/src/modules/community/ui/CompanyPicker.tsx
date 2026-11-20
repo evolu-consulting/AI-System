@@ -1,8 +1,9 @@
+// CR-195 BR-195-8: danh sách có ô chọn (ô tìm nằm ở hộp chọn).
 // #269 · ô chọn công ty nhận bài: tìm theo tên ở máy chủ + «Xem thêm» (50 công ty/lần), không tải cả danh sách.
 
 import type { PartnerOrg } from "@ai/contracts/community";
 import { Button } from "@ai/web-kit/ui/kit/button";
-import { Input } from "@ai/web-kit/ui/kit/input";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { t } from "../i18n";
@@ -10,14 +11,15 @@ import { t } from "../i18n";
 const PAGE = 50;
 
 export function CompanyPicker({
+  q,
   selected,
   onToggle,
 }: {
+  q: string;
   selected: string[];
   onToggle: (id: string) => void;
 }) {
   const { api } = useApp();
-  const [q, setQ] = useState("");
   const [list, setList] = useState<PartnerOrg[]>([]);
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -49,30 +51,23 @@ export function CompanyPicker({
   const shown = list.filter((p) => !p.left);
   return (
     <div className="companypick">
-      <Input
-        type="search"
-        data-testid="company-search"
-        placeholder={t("community.audience.companySearch")}
-        aria-label={t("community.audience.companySearch")}
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
-      <div className="chips">
+      <ul className="companyrows">
         {shown.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={selected.includes(p.id) ? "chip on" : "chip"}
-            aria-pressed={selected.includes(p.id)}
-            onClick={() => onToggle(p.id)}
-          >
-            {p.name}
-          </button>
+          <li key={p.id}>
+            <div className="companyrow">
+              <Checkbox
+                id={`co-${p.id}`}
+                checked={selected.includes(p.id)}
+                onCheckedChange={() => onToggle(p.id)}
+              />
+              <label htmlFor={`co-${p.id}`}>{p.name}</label>
+            </div>
+          </li>
         ))}
         {shown.length === 0 && !more && (
-          <span className="muted">{t("community.audience.companyNone")}</span>
+          <li className="muted">{t("community.audience.companyNone")}</li>
         )}
-      </div>
+      </ul>
       {more && (
         <Button
           variant="quiet"
